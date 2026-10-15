@@ -2,13 +2,7 @@
 add_library(sunshine_crypto STATIC "${PROJECT_SOURCE_DIR}/src/crypto.cpp")
 target_link_libraries(sunshine_crypto PUBLIC sunshine::tls)
 
-add_library(sunshine_ai_provider STATIC "${PROJECT_SOURCE_DIR}/src/ai/provider.cpp")
-target_link_libraries(sunshine_ai_provider PUBLIC nlohmann_json::nlohmann_json)
-
-add_library(sunshine_ai_stream STATIC "${PROJECT_SOURCE_DIR}/src/ai/http_stream.cpp")
-target_link_libraries(sunshine_ai_stream PUBLIC sunshine_http Threads::Threads)
-
-foreach(_module IN ITEMS crypto ai_provider ai_stream)
+foreach(_module IN ITEMS crypto)
     target_link_libraries("sunshine_${_module}" PRIVATE sunshine_project_options sunshine_coverage)
     target_include_directories("sunshine_${_module}" PUBLIC "${PROJECT_SOURCE_DIR}")
     target_compile_features("sunshine_${_module}" PUBLIC cxx_std_23)

@@ -1,5 +1,3 @@
-import { createCoverSelectionSkill, COVER_SELECTION_SKILL_ID } from './skills/coverSelectionSkill.js'
-import { createGameTitleNormalizeSkill, GAME_TITLE_NORMALIZE_SKILL_ID } from './skills/gameTitleNormalizeSkill.js'
 import { createScanOverrideMemorySkill, SCAN_OVERRIDE_MEMORY_SKILL_ID } from './skills/scanOverrideMemorySkill.js'
 import {
   createAgent,
@@ -13,7 +11,11 @@ import {
   normalizeEnabledSkillIds,
 } from '../core/agentCore.js'
 
-export { getGameResourceKey } from './skills/coverSelectionSkill.js'
+export function getGameResourceKey(app, index) {
+  if (app?.['__scan-key']) return app['__scan-key']
+  const stablePart = app?.source_path || app?.cmd || app?.name || 'app'
+  return `${stablePart}-${index}`
+}
 export {
   getGameResourceReviewReasons,
   needsGameResourceReview,
@@ -24,8 +26,6 @@ export const GAME_LIBRARY_AGENT_ID = 'game-library-curator'
 
 export const GAME_LIBRARY_SKILL_IDS = {
   scanOverrideMemory: SCAN_OVERRIDE_MEMORY_SKILL_ID,
-  titleNormalize: GAME_TITLE_NORMALIZE_SKILL_ID,
-  coverSelection: COVER_SELECTION_SKILL_ID,
 }
 
 export const GAME_LIBRARY_AGENT_CAPABILITIES = [
@@ -40,28 +40,6 @@ export const GAME_LIBRARY_AGENT_CAPABILITIES = [
     required: true,
     defaultEnabled: true,
     userSelectable: false,
-  },
-  {
-    skillId: GAME_TITLE_NORMALIZE_SKILL_ID,
-    stage: 'metadata',
-    icon: 'fa-wand-magic-sparkles',
-    label: 'AI name cleanup',
-    labels: {
-      zh: 'AI \u540d\u79f0\u6e05\u6d17',
-    },
-    defaultEnabled: true,
-    userSelectable: true,
-  },
-  {
-    skillId: COVER_SELECTION_SKILL_ID,
-    stage: 'asset',
-    icon: 'fa-image',
-    label: 'AI cover matching',
-    labels: {
-      zh: 'AI \u5c01\u9762\u5339\u914d',
-    },
-    defaultEnabled: true,
-    userSelectable: true,
   },
 ]
 
@@ -116,8 +94,6 @@ export function getGameLibraryCapabilityLabel(skillId, options = {}) {
 export function createDefaultGameLibrarySkills(options = {}) {
   return [
     createScanOverrideMemorySkill(options.memory),
-    createGameTitleNormalizeSkill(options.titleNormalize),
-    createCoverSelectionSkill(options.coverSelection),
     ...gameLibraryRegistry.getExtensionSkills(),
   ]
 }
@@ -144,7 +120,6 @@ export async function runGameLibraryCuratorAgent(apps, options = {}) {
 }
 
 const memorySkill = createScanOverrideMemorySkill()
-const titleNormalizeSkill = createGameTitleNormalizeSkill()
 
 export function applyGameLibraryOverrides(apps) {
   return memorySkill.apply(apps)
@@ -152,9 +127,4 @@ export function applyGameLibraryOverrides(apps) {
 
 export function rememberGameLibraryApp(scannedApp, finalApp) {
   return memorySkill.remember(scannedApp, finalApp)
-}
-
-export async function enhanceGameLibraryMetadata(apps) {
-  const result = await titleNormalizeSkill.run({ apps, events: [], stats: {}, options: {} })
-  return result.apps
 }

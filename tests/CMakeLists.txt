@@ -35,13 +35,6 @@ add_test(NAME pen_barrel_roll_unit_tests COMMAND pen_barrel_roll_unit_tests)
 
 
 # Keep compatibility conversion tests independent of the platform host backends.
-add_executable(ai_provider_unit_tests
-        ${CMAKE_SOURCE_DIR}/tests/unit/test_ai_provider.cpp)
-target_include_directories(ai_provider_unit_tests PRIVATE "${CMAKE_SOURCE_DIR}")
-target_link_libraries(ai_provider_unit_tests PRIVATE gtest_main nlohmann_json::nlohmann_json
-        sunshine_project_options sunshine_coverage sunshine_ai_provider)
-set_target_properties(ai_provider_unit_tests PROPERTIES CXX_STANDARD 23)
-add_test(NAME ai_provider_unit_tests COMMAND ai_provider_unit_tests)
 
 add_executable(beast_http_unit_tests
         ${CMAKE_SOURCE_DIR}/tests/tools/test_beast_http.cpp)
@@ -71,13 +64,12 @@ endif ()
 add_test(NAME webhook_transport_tests COMMAND webhook_transport_tests)
 set_tests_properties(webhook_transport_tests PROPERTIES TIMEOUT 60)
 
-# Exercise real curl transfers and a single-threaded HTTPS listener in isolation.
+# Exercise asset path traversal protection in isolation.
 add_executable(http_safety_unit_tests
-        ${CMAKE_SOURCE_DIR}/tests/tools/test_http_safety.cpp
-        ${CMAKE_SOURCE_DIR}/src/ai/proxy.cpp)
+        ${CMAKE_SOURCE_DIR}/tests/tools/test_http_safety.cpp)
 target_include_directories(http_safety_unit_tests PRIVATE "${CMAKE_SOURCE_DIR}")
-target_link_libraries(http_safety_unit_tests PRIVATE ${SUNSHINE_EXTERNAL_LIBRARIES} gtest_main
-        sunshine_project_options sunshine_coverage sunshine_crypto sunshine_ai_provider sunshine_ai_stream)
+target_link_libraries(http_safety_unit_tests PRIVATE Boost::winapi gtest_main
+        sunshine_project_options sunshine_coverage)
 target_compile_definitions(http_safety_unit_tests PRIVATE ${SUNSHINE_DEFINITIONS})
 set_target_properties(http_safety_unit_tests PROPERTIES CXX_STANDARD 23)
 if (WIN32)
@@ -344,20 +336,6 @@ if (WIN32)
             LINK_SEARCH_START_STATIC 1)
     add_test(NAME vdd_prerequisite_unit_tests COMMAND vdd_prerequisite_unit_tests)
 
-    add_executable(credential_store_unit_tests
-            ${CMAKE_SOURCE_DIR}/src/ai/credential_store.cpp
-            ${CMAKE_SOURCE_DIR}/tests/unit/test_credential_store.cpp)
-    target_include_directories(credential_store_unit_tests PRIVATE "${CMAKE_SOURCE_DIR}")
-    target_link_libraries(credential_store_unit_tests
-            PRIVATE advapi32
-            crypt32
-            gtest_main
-            sunshine_project_options sunshine_coverage)
-    target_compile_options(credential_store_unit_tests PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${SUNSHINE_COMPILE_OPTIONS}>)
-    set_target_properties(credential_store_unit_tests PROPERTIES
-            CXX_STANDARD 23
-            LINK_SEARCH_START_STATIC 1)
-    add_test(NAME credential_store_unit_tests COMMAND credential_store_unit_tests)
 endif ()
 
 if (NOT BUILD_TESTS)
@@ -546,7 +524,7 @@ target_link_libraries(${PROJECT_NAME}
         ${SUNSHINE_EXTERNAL_LIBRARIES}
         gtest
         ${PLATFORM_LIBRARIES}
-        sunshine_project_options sunshine_coverage sunshine_crypto sunshine_ai_provider sunshine_ai_stream)
+        sunshine_project_options sunshine_coverage sunshine_crypto)
 target_compile_definitions(${PROJECT_NAME} PUBLIC
         SUNSHINE_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
         ${SUNSHINE_DEFINITIONS}

@@ -16,9 +16,7 @@ import {
   needsGameResourceReview,
   registerGameLibrarySkillExtension,
 } from '../utils/agents/gameLibrary/gameLibraryCuratorAgent.js'
-import { createCoverSelectionSkill } from '../utils/agents/gameLibrary/skills/coverSelectionSkill.js'
-import { getGameResourceKey } from '../utils/agents/gameLibrary/skills/coverSelectionSkill.js'
-import { createGameTitleNormalizeSkill } from '../utils/agents/gameLibrary/skills/gameTitleNormalizeSkill.js'
+import { getGameResourceKey } from '../utils/agents/gameLibrary/gameLibraryCuratorAgent.js'
 import { createScanOverrideMemorySkill } from '../utils/agents/gameLibrary/skills/scanOverrideMemorySkill.js'
 
 test('createGameLibrarySkill normalizes extension skill definitions', async () => {
@@ -41,192 +39,12 @@ test('createGameLibrarySkill rejects invalid skill definitions', () => {
   assert.throws(() => createGameLibrarySkill({ id: 'game.test.invalid' }), /run\(context\)/)
 })
 
-test('game library curator agent runs memory, title, and cover skills in order', async () => {
-  const calls = []
-  const agent = createGameLibraryCuratorAgent({
-    skills: [
-      createScanOverrideMemorySkill({
-        applyOverrides(apps) {
-          calls.push('memory')
-          return apps.map((app) => ({ ...app, name: 'Remembered Name' }))
-        },
-      }),
-      createGameTitleNormalizeSkill({
-        async enhanceNames(apps) {
-          calls.push('title')
-          return apps.map((app) => ({
-            ...app,
-            name: 'Canonical Game',
-            'canonical-name': 'Canonical Game',
-            'ai-confidence': 0.94,
-          }))
-        },
-      }),
-      createCoverSelectionSkill({
-        async findCover() {
-          calls.push('cover')
-          return {
-            saveUrl: 'cover.jpg',
-            source: 'igdb',
-            name: 'Canonical Game',
-            searchTerm: 'Canonical Game',
-            aiCoverConfidence: 0.9,
-            aiCoverReason: 'Exact title match',
-          }
-        },
-      }),
-    ],
-  })
-
-  const result = await agent.run([
-    { name: 'raw.exe', cmd: 'C:/Games/raw.exe', 'is-game': true },
-  ])
-
-  assert.deepEqual(calls, ['memory', 'title', 'cover'])
-  assert.equal(result.apps[0].name, 'Canonical Game')
-  assert.equal(result.apps[0]['image-path'], 'cover.jpg')
-  assert.equal(result.stats.titleChanges, 1)
-  assert.equal(result.stats.coversFound, 1)
-  assert.equal(result.events.length, 3)
-})
-
-test('game library curator agent can run a selected skill subset', async () => {
-  const calls = []
-  const agent = createGameLibraryCuratorAgent({
-    skills: [
-      createScanOverrideMemorySkill({
-        applyOverrides(apps) {
-          calls.push('memory')
-          return apps
-        },
-      }),
-      createGameTitleNormalizeSkill({
-        async enhanceNames(apps) {
-          calls.push('title')
-          return apps
-        },
-      }),
-    ],
-  })
-
-  await agent.run([{ name: 'raw.exe' }], {
-    enabledSkills: [GAME_LIBRARY_SKILL_IDS.titleNormalize],
-  })
-
-  assert.deepEqual(calls, ['title'])
-})
-
-test('cover selection skill limits concurrent cover lookups', async () => {
-  let active = 0
-  let maxActive = 0
-  const progress = []
-  const agent = createGameLibraryCuratorAgent({
-    skills: [
-      createCoverSelectionSkill({
-        concurrency: 2,
-        async findCover(app) {
-          active += 1
-          maxActive = Math.max(maxActive, active)
-          await new Promise((resolve) => setTimeout(resolve, 5))
-          active -= 1
-          return {
-            saveUrl: `${app.name}.jpg`,
-            source: 'steam',
-            name: app.name,
-          }
-        },
-      }),
-    ],
-  })
-
-  const result = await agent.run(Array.from({ length: 5 }, (_, index) => ({ name: `Game ${index}` })), {
-    onSkillProgress(event) {
-      progress.push(event)
-    },
-  })
-
-  assert.equal(maxActive, 2)
-  assert.equal(result.stats.coversFound, 5)
-  assert.deepEqual(result.apps.map((app) => app['image-path']), [
-    'Game 0.jpg',
-    'Game 1.jpg',
-    'Game 2.jpg',
-    'Game 3.jpg',
-    'Game 4.jpg',
-  ])
-  assert.equal(progress.filter((event) => event.phase === 'item:done').length, 5)
-  assert.equal(progress.at(-1).current, 5)
-  assert.equal(progress.at(-1).total, 5)
-})
-
-test('game library curator agent continues after a skill failure', async () => {
-  const errors = []
-  const calls = []
-  const agent = createGameLibraryCuratorAgent({
-    skills: [
-      createGameTitleNormalizeSkill({
-        async enhanceNames() {
-          calls.push('title')
-          throw new Error('metadata unavailable')
-        },
-      }),
-      createCoverSelectionSkill({
-        async findCover() {
-          calls.push('cover')
-          return { saveUrl: 'fallback-cover.jpg', source: 'steam', name: 'Raw Game' }
-        },
-      }),
-    ],
-  })
-
-  const result = await agent.run([{ name: 'Raw Game', cmd: 'raw.exe' }], {
-    onSkillError(skillId, error) {
-      errors.push([skillId, error.message])
-    },
-  })
-
-  assert.deepEqual(calls, ['title', 'cover'])
-  assert.deepEqual(errors, [[GAME_LIBRARY_SKILL_IDS.titleNormalize, 'metadata unavailable']])
-  assert.equal(result.stats.skillFailures, 1)
-  assert.equal(result.apps[0]['image-path'], 'fallback-cover.jpg')
-})
-
 test('game resource keys stay unique for duplicate launch metadata', () => {
   const first = { source_path: 'C:/Games/Same', cmd: 'same.exe' }
   const second = { source_path: 'C:/Games/Same', cmd: 'same.exe' }
 
   assert.notEqual(getGameResourceKey(first, 0), getGameResourceKey(second, 1))
   assert.equal(getGameResourceKey({ ...first, '__scan-key': 'scan-1-0' }, 7), 'scan-1-0')
-})
-
-test('game library curator capabilities expose user-selectable skills', () => {
-  const selectableSkillIds = getGameLibrarySelectableCapabilities()
-    .map((capability) => capability.skillId)
-
-  assert.deepEqual(selectableSkillIds, [
-    GAME_LIBRARY_SKILL_IDS.titleNormalize,
-    GAME_LIBRARY_SKILL_IDS.coverSelection,
-  ])
-  assert.equal(
-    GAME_LIBRARY_AGENT_CAPABILITIES.find((capability) => capability.skillId === GAME_LIBRARY_SKILL_IDS.scanOverrideMemory)
-      .userSelectable,
-    false
-  )
-  assert.equal(getGameLibraryCapabilityIcon(GAME_LIBRARY_SKILL_IDS.titleNormalize), 'fa-wand-magic-sparkles')
-  assert.equal(getGameLibraryCapabilityLabel(GAME_LIBRARY_SKILL_IDS.coverSelection), 'AI cover matching')
-  assert.equal(getGameLibraryCapabilityLabel(GAME_LIBRARY_SKILL_IDS.coverSelection, { locale: 'zh-CN' }), 'AI \u5c01\u9762\u5339\u914d')
-})
-
-test('game library curator skill id helpers keep required skills enabled', () => {
-  assert.deepEqual(getDefaultEnabledGameLibrarySkillIds(), [
-    GAME_LIBRARY_SKILL_IDS.scanOverrideMemory,
-    GAME_LIBRARY_SKILL_IDS.titleNormalize,
-    GAME_LIBRARY_SKILL_IDS.coverSelection,
-  ])
-  assert.deepEqual(normalizeGameLibrarySkillIds([GAME_LIBRARY_SKILL_IDS.coverSelection, 'unknown.skill']), [
-    GAME_LIBRARY_SKILL_IDS.scanOverrideMemory,
-    GAME_LIBRARY_SKILL_IDS.coverSelection,
-  ])
 })
 
 test('game library curator supports registering extension skills', async () => {
@@ -274,7 +92,7 @@ test('game library curator rejects duplicate extension skills', () => {
   assert.throws(
     () => registerGameLibrarySkillExtension({
       skill: {
-        id: GAME_LIBRARY_SKILL_IDS.coverSelection,
+        id: GAME_LIBRARY_SKILL_IDS.scanOverrideMemory,
         async run(context) {
           return context
         },

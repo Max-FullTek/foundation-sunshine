@@ -3,7 +3,6 @@
  * @brief Web UI HTTPS listener lifecycle and module shutdown.
  */
 #include "confighttp.h"
-#include "ai/http_stream.h"
 #include "config.h"
 #include "confighttp/routes.h"
 #include "confighttp/types.h"
@@ -156,7 +155,6 @@ namespace confighttp {
     // Wait for any event
     shutdown_event->view();
 
-    ai::http::shutdown_streams();
     image_enhancement::api::shutdown();
     server.stop();
     if (loopback_server) {

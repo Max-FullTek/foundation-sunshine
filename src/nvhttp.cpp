@@ -41,13 +41,9 @@
 #include "client_fingerprint.h"
 #include "config.h"
 #include "confighttp.h"
-#include "ai/proxy.h"
-#include "ai/http_stream.h"
 #include "display_device/session.h"
 #include "display_device/vdd_capability.h"
 #include "file_handler.h"
-#include "file_mapping/file_mapping_http.h"
-#include "file_mapping/service.h"
 #include "globals.h"
 #include "hdr/session_target.h"
 #include "image_enhancement/nr_defaults.h"
@@ -57,7 +53,6 @@
 #include "network.h"
 #include "nvhttp.h"
 #include "nvhttp/abr_api.h"
-#include "nvhttp/ai_api.h"
 #include "nvhttp/apps.h"
 #include "nvhttp/clipboard_api.h"
 #include "nvhttp/display_control.h"
@@ -515,7 +510,7 @@ namespace nvhttp {
     tree.put("root.appListEtag", proc::proc.get_apps_etag());
 
     // AI capability: inform client if AI proxy is available
-    tree.put("root.AiCapability", ai::isAiEnabled() ? 1 : 0);
+    tree.put("root.AiCapability", 0);
 
 #ifdef _WIN32
     tree.put("root.VddCapabilityVersion", display_device::vdd_capability::capability_version);
@@ -970,15 +965,6 @@ namespace nvhttp {
       return false;
     };
 
-    file_mapping::service_t file_mapping_service;
-    file_mapping::service_t::config_t file_mapping_config;
-    file_mapping_config.bind_address = bind_address.empty() ? "0.0.0.0" : bind_address;
-    file_mapping_config.port = config::nvhttp.file_mapping_port;
-    file_mapping_config.certificate_file = config::nvhttp.cert;
-    file_mapping_config.private_key_file = config::nvhttp.pkey;
-    file_mapping_config.mappings_json = config::nvhttp.file_mappings;
-    file_mapping_config.authorize_client = is_client_paired;
-    file_mapping_service.start(std::move(file_mapping_config));
 
     // USB forwarding requires explicit host opt-in. Credentials are generated
     // per service lifetime and delivered only over the paired HTTPS connection.
@@ -1127,29 +1113,6 @@ namespace nvhttp {
     https_server.resource["^/api/v1/clipboard/blob$"]["POST"] = clipboard_api::upload_blob;
     https_server.resource["^/api/v1/clipboard/blob/([A-Za-z0-9_\\-]{1,128})$"]["GET"] = clipboard_api::get_blob;
 
-    https_server.resource["^/api/v1/file-mapping/capability$"]["GET"] =
-      [&](resp_https_t resp, req_https_t req) {
-        auto header_value = [](const web::CaseInsensitiveMultimap &headers, const std::string &name) {
-          auto it = headers.find(name);
-          return it == headers.end() ? std::string {} : it->second;
-        };
-        auto write_response = [](resp_https_t response, const file_mapping_http::http_response_t &out) {
-          response->write(out.status, out.body, out.headers);
-        };
-
-        write_response(
-          std::move(resp),
-          file_mapping_service.make_capability_response(
-            get_client_cert_uuid_from_request(req),
-            header_value(req->header, "host")));
-      };
-
-    https_server.resource["^/api/v1/file-mapping/session$"]["GET"] =
-      [](resp_https_t resp, req_https_t req) {
-        auto out = file_mapping_http::make_session_placeholder_response(req->header);
-        resp->write(out.status, out.body, out.headers);
-      };
-
     // ABR (Adaptive Bitrate) API routes - client-facing with cert auth
     https_server.resource["^/api/abr/capabilities$"]["GET"] = abr_api::capabilities;
     https_server.resource["^/api/abr$"]["POST"] = abr_api::configure;
@@ -1229,14 +1192,12 @@ namespace nvhttp {
     /* Stop the public HTTP listeners first.  Once their worker threads have
      * joined, no capability request or route callback can race broker/host
      * teardown below. */
-    ai::http::shutdown_streams();
     https_server.stop();
     http_server.stop();
     ssl.join();
     tcp.join();
 
     reverse_tunnel_service.stop();
-    file_mapping_service.stop();
   }
 
 }  // namespace nvhttp

@@ -9,7 +9,6 @@
 
 #include "src/streaming/abr.h"
 #include "src/config.h"
-#include "src/ai/proxy.h"
 #include "src/logging.h"
 #include "src/network.h"
 #include "src/rtsp.h"
@@ -105,8 +104,8 @@ namespace nvhttp::abr_api {
     json resp_json;
     resp_json["supported"] = caps.supported;
     resp_json["version"] = caps.version;
-    resp_json["features"] = json::array({ "llm_ai", "game_aware", "fallback_threshold", "bitrate_cap" });
-    resp_json["llmEnabled"] = ai::isAiEnabled();
+      resp_json["features"] = json::array({ "fallback_threshold", "bitrate_cap" });
+    resp_json["llmEnabled"] = false;
     resp_json["hostMaxBitrate"] = host_max_bitrate_kbps();
 
     response->write(web::StatusCode::ok, resp_json.dump(), json_headers());

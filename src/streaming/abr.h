@@ -2,19 +2,11 @@
  * @file src/streaming/abr.h
  * @brief Adaptive Bitrate (ABR) decision engine for server-side bitrate control.
  *
- * Two-tier architecture:
- *   1. Real-time fallback: immediate threshold-based reactions to packet loss.
- *   2. Event-driven LLM: intelligent per-game target bitrate via LLM AI,
- *      triggered on app switches and network recovery.
- *
- * Clients POST network metrics periodically; the server responds with
- * bitrate adjustments from the fallback layer, while the LLM asynchronously
- * sets the optimal target bitrate ceiling.
+ * Clients report network metrics; threshold-based decisions adjust bitrate.
  */
 #pragma once
 
 #include <chrono>
-#include <deque>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -48,7 +40,7 @@ namespace abr {
   /// Server decision sent back to client
   struct action_t {
     int new_bitrate_kbps = 0;   ///< 0 means no change (immediate action)
-    int target_bitrate_kbps = 0; ///< LLM-recommended optimal bitrate (always set when LLM responds)
+    int target_bitrate_kbps = 0; ///< Reserved target bitrate field for client compatibility
     std::string reason;
   };
 
@@ -58,53 +50,18 @@ namespace abr {
     int version = 1;
   };
 
-  /// Recent feedback snapshot for LLM context window
-  struct feedback_snapshot_t {
-    network_feedback_t feedback;
-    std::chrono::steady_clock::time_point timestamp;
-  };
-
   /// Per-client ABR session state
   struct session_state_t {
     config_t config;
     int current_bitrate_kbps = 0;
     int initial_bitrate_kbps = 0;
     std::string app_name;            ///< Game/app from config (may be launcher name)
-    std::string foreground_title;     ///< Actual foreground window title (detected at runtime)
-    std::string foreground_exe;       ///< Actual foreground process executable name
-
-    /// Rolling window of recent feedback for LLM context (last N seconds)
-    std::deque<feedback_snapshot_t> recent_feedback;
-    static constexpr size_t MAX_FEEDBACK_HISTORY = 10;
-
-    /// LLM target bitrate: the ideal bitrate recommended by LLM for current app/conditions.
-    /// Fallback probe-up will move toward this target. 0 = no recommendation yet.
-    int llm_target_bitrate_kbps = 0;
-
-    /// Rate limiting: minimum interval between LLM calls
-    std::chrono::steady_clock::time_point last_llm_call;
-    static constexpr int LLM_MIN_INTERVAL_SECONDS = 10;
-
-    /// Foreground window detection rate limiting
-    std::chrono::steady_clock::time_point last_fg_detect;
-    static constexpr int FG_DETECT_INTERVAL_SECONDS = 10;
-    uint32_t last_fg_pid = 0;  ///< Cached PID to detect window changes
-
     /// Fallback: simple threshold-based decisions (always active)
     int consecutive_high_loss = 0;
     int stable_ticks = 0;
     static constexpr int FALLBACK_INTERVAL_SECONDS = 3;
     std::chrono::steady_clock::time_point last_fallback_time;
 
-    /// LLM trigger flags
-    bool app_changed = false;         ///< Foreground app changed since last LLM call
-    bool network_recovered = false;   ///< Network recovered from turbulence
-
-    /// Async LLM state
-    bool llm_in_flight = false;  ///< Prevents concurrent LLM calls (protected by sessions_mutex)
-    uint64_t generation = 0;     ///< Monotonic counter to detect stale worker results
-
-    std::chrono::steady_clock::time_point created_time;
   };
 
   /**
@@ -133,7 +90,6 @@ namespace abr {
    * @brief Process network feedback and produce a bitrate action.
    *
    * Runs fallback logic (threshold-based) on every call for real-time response.
-   * Triggers LLM asynchronously on app change or network recovery events.
    *
    * @param client_name Client identifier.
    * @param feedback Network metrics from the client.

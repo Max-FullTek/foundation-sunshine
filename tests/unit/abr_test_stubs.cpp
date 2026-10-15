@@ -1,6 +1,5 @@
 #include <boost/log/sources/severity_logger.hpp>
 
-#include "src/ai/proxy.h"
 #include "src/config.h"
 
 boost::log::sources::severity_logger<int> verbose;
@@ -21,22 +20,3 @@ namespace config {
   input_t input;
   sunshine_t sunshine;
 }  // namespace config
-
-namespace ai {
-
-  bool
-  isAiEnabled() {
-    return false;
-  }
-
-  AiProxyResult
-  processAiChat(const std::string &) {
-    return { 200, "{}", "application/json" };
-  }
-
-  AiProxyResult
-  processAiChatStream(const std::string &, std::function<bool(const char *, size_t)>, std::function<bool()>) {
-    return { 200, "", "text/event-stream" };
-  }
-
-}  // namespace ai

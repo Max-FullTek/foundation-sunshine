@@ -172,29 +172,29 @@ TEST_F(ConfigHttpRoutes, LocaleRemainsPublicAndKeepsLegacyResponseShape) {
 
 TEST_F(ConfigHttpRoutes, LocalAuthenticatedApiKeepsItsResponseShape) {
   auto client = connect();
-  const auto response = client->request("GET", "/api/v1/file-mapping/mappings");
+  const auto response = client->request("GET", "/api/config");
   EXPECT_EQ(response->status_code, "200 OK");
   const auto body = nlohmann::json::parse(response->content.string());
-  EXPECT_EQ(body["ok"], true);
-  EXPECT_TRUE(body["mappings"].is_array());
+  EXPECT_EQ(body["status"], "true");
+  EXPECT_TRUE(body["version"].is_string());
 }
 
 TEST_F(ConfigHttpRoutes, RejectsCrossSiteBrowserApiRequests) {
   auto client = connect();
-  const auto response = client->request("GET", "/api/v1/file-mapping/mappings", "", { { "Origin", "https://evil.example" } });
+  const auto response = client->request("GET", "/api/config", "", { { "Origin", "https://evil.example" } });
   EXPECT_EQ(response->status_code, "403 Forbidden");
   EXPECT_EQ(nlohmann::json::parse(response->content.string())["error"], "Cross-site request denied");
 }
 
 TEST_F(ConfigHttpRoutes, RejectsDuplicateOriginHeaders) {
   auto client = connect();
-  const auto response = client->request("GET", "/api/v1/file-mapping/mappings", "", { { "Origin", "https://evil.example" }, { "Origin", "https://localhost" } });
+  const auto response = client->request("GET", "/api/config", "", { { "Origin", "https://evil.example" }, { "Origin", "https://localhost" } });
   EXPECT_EQ(response->status_code, "403 Forbidden");
 }
 
 TEST_F(ConfigHttpRoutes, RequiresJsonBeforeCallingMutationHandlers) {
   auto client = connect();
-  const auto response = client->request("POST", "/api/ai/config", "{}");
+  const auto response = client->request("POST", "/api/apps", "{}");
   EXPECT_EQ(response->status_code, "400 Bad Request");
   EXPECT_EQ(nlohmann::json::parse(response->content.string())["error"], "Content type not provided");
   const auto wrong_type = client->request("POST", "/api/apps", "{}", { { "Content-Type", "text/plain" } });
@@ -207,42 +207,10 @@ TEST_F(ConfigHttpRoutes, FirstRunPasswordStillRejectsCrossSiteSources) {
   auto client = connect();
   const auto response = client->request("POST", "/api/password", "{}", { { "Content-Type", "application/json" }, { "Origin", "https://evil.example" } });
   EXPECT_EQ(response->status_code, "403 Forbidden");
-  const auto unauthenticated = client->request("GET", "/api/v1/file-mapping/mappings");
+  const auto unauthenticated = client->request("GET", "/api/config");
   EXPECT_EQ(unauthenticated->status_code, "307 Temporary Redirect");
   ASSERT_NE(unauthenticated->header.find("Location"), unauthenticated->header.end());
   EXPECT_EQ(unauthenticated->header.find("Location")->second, "/welcome");
-}
-
-TEST_F(ConfigHttpRoutes, AiPreflightRemainsAccessibleWithoutCredentials) {
-  config::sunshine.username.clear();
-  auto client = connect();
-  const auto response = client->request("OPTIONS", "/api/ai/chat/completions");
-  EXPECT_EQ(response->status_code, "204 No Content");
-  ASSERT_NE(response->header.find("Access-Control-Allow-Methods"), response->header.end());
-  EXPECT_EQ(response->header.find("Access-Control-Allow-Methods")->second, "GET, POST, OPTIONS");
-}
-
-TEST_F(ConfigHttpRoutes, AiStreamStillRejectsCrossSiteAndDuplicateOriginBeforeStartingSse) {
-  auto client = connect();
-  for (const auto &headers : {
-         web::CaseInsensitiveMultimap { { "Content-Type", "application/json" }, { "Origin", "https://evil.example" } },
-         web::CaseInsensitiveMultimap { { "Content-Type", "application/json" }, { "Origin", "https://localhost" }, { "Origin", "https://evil.example" } } }) {
-    const auto response = client->request("POST", "/api/ai/chat/completions", R"({"stream":true})", headers);
-    EXPECT_EQ(response->status_code, "403 Forbidden");
-    EXPECT_EQ(nlohmann::json::parse(response->content.string())["error"], "Cross-site request denied");
-    EXPECT_EQ(response->header.count("Transfer-Encoding"), 0);
-  }
-}
-
-TEST_F(ConfigHttpRoutes, AiStreamStillRequiresInitialCredentialsAndJson) {
-  config::sunshine.username.clear();
-  auto client = connect();
-  const auto response = client->request("POST", "/api/ai/chat/completions", R"({"stream":true})", { { "Content-Type", "application/json" } });
-  EXPECT_EQ(response->status_code, "307 Temporary Redirect");
-  ASSERT_NE(response->header.find("Location"), response->header.end());
-  EXPECT_EQ(response->header.find("Location")->second, "/welcome");
-  EXPECT_EQ(response->header.count("Transfer-Encoding"), 0);
-  EXPECT_EQ(client->request("POST", "/api/ai/chat/completions", R"({"stream":true})")->status_code, "400 Bad Request");
 }
 
 TEST_F(ConfigHttpRoutes, LocalLogoutAndUnknownRouteKeepTheirStatusCodes) {

@@ -101,20 +101,6 @@ set(SUNSHINE_HOST_SOURCES
     src/pyrowave/encoder.h
     src/pyrowave/pyrowave.h
 
-    # src/file_mapping
-    src/file_mapping/file_mapping.cpp src/file_mapping/file_mapping.h
-    src/file_mapping/file_mapping_config.cpp src/file_mapping/file_mapping_config.h
-    src/file_mapping/file_mapping_http.cpp src/file_mapping/file_mapping_http.h
-    src/file_mapping/file_mapping_operations.cpp src/file_mapping/file_mapping_operations.h
-    src/file_mapping/file_mapping_rpc.cpp src/file_mapping/file_mapping_rpc.h
-    src/file_mapping/file_mapping_store.cpp src/file_mapping/file_mapping_store.h
-    src/file_mapping/file_mapping_token.cpp src/file_mapping/file_mapping_token.h
-    src/file_mapping/file_mapping_ws.cpp src/file_mapping/file_mapping_ws.h
-    src/file_mapping/file_mapping_ws_session.cpp src/file_mapping/file_mapping_ws_session.h
-    src/file_mapping/file_mapping_ws_server.cpp src/file_mapping/file_mapping_ws_server.h
-    src/file_mapping/service.cpp src/file_mapping/service.h
-    src/file_mapping/config_http.cpp src/file_mapping/config_http.h
-    src/file_mapping/file_mapping_base64.h
 
     # src/remote_usb
     src/remote_usb/loopback_usbip_bridge.cpp src/remote_usb/loopback_usbip_bridge.h
@@ -122,13 +108,6 @@ set(SUNSHINE_HOST_SOURCES
     src/remote_usb/remote_usb_host_controller.cpp src/remote_usb/remote_usb_host_controller.h
     src/remote_usb/usbip_endpoint.h
 
-    # src/ai
-    src/ai/credential_store.cpp src/ai/credential_store.h
-    src/ai/http.cpp src/ai/http.h
-    src/ai/config_store.cpp src/ai/config_store.h
-    src/ai/proxy.cpp src/ai/proxy.h
-    src/ai/http_stream.h
-    src/ai/provider.h
 
     # src/webhook
     src/webhook/webhook_auth.cpp src/webhook/webhook_auth.h
@@ -138,7 +117,6 @@ set(SUNSHINE_HOST_SOURCES
 
     # src/nvhttp
     src/nvhttp/abr_api.cpp src/nvhttp/abr_api.h
-    src/nvhttp/ai_api.cpp src/nvhttp/ai_api.h
     src/nvhttp/apps.cpp src/nvhttp/apps.h
     src/nvhttp/clipboard_api.cpp src/nvhttp/clipboard_api.h
     src/nvhttp/display_control.cpp src/nvhttp/display_control.h

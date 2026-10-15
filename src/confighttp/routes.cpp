@@ -3,7 +3,6 @@
  * @brief Web UI route composition and specialized local access policies.
  */
 #include "src/confighttp/routes.h"
-#include "src/ai/http.h"
 #include "src/clipboard_http.h"
 #include "src/config.h"
 #include "src/confighttp/apps.h"
@@ -16,7 +15,6 @@
 #include "src/confighttp/integrations.h"
 #include "src/confighttp/proxies.h"
 #include "src/confighttp/runtime.h"
-#include "src/file_mapping/config_http.h"
 #include "src/network.h"
 #include "src/text_context/http.h"
 #include "src/tray/tray_http.h"
@@ -35,7 +33,6 @@ namespace confighttp {
     confighttp::runtime::register_routes(server);
     confighttp::integrations::register_routes(server);
     confighttp::proxies::register_routes(server);
-    // Personal fork: folder sharing and AI are not exposed through the Web UI.
 
     // Clipboard sync routes are registered in a sibling module so the
     // Web UI server doesn't grow further. They reuse our

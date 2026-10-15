@@ -416,27 +416,6 @@
                 </label>
               </section>
 
-              <section class="scan-options-section">
-                <div class="scan-options-title">{{ $t('apps.scan_options.ai') }}</div>
-                <div class="scan-enhancement-list">
-                  <label
-                    v-for="skill in selectableGameLibrarySkills"
-                    :key="skill.skillId"
-                    class="scan-option-row scan-option-row--compact"
-                  >
-                    <input
-                      type="checkbox"
-                      :checked="isGameLibrarySkillEnabled(skill.skillId)"
-                      @change="toggleGameLibrarySkill(skill.skillId)"
-                    />
-                    <span>
-                      <strong>{{ getGameLibrarySkillLabel(skill.skillId) }}</strong>
-                      <small>{{ $t('apps.scan_options.ai_desc') }}</small>
-                    </span>
-                    <i class="fas scan-option-icon" :class="getGameLibrarySkillIcon(skill.skillId)"></i>
-                  </label>
-                </div>
-              </section>
             </div>
 
             <div class="scan-options-footer">
@@ -644,7 +623,6 @@ const {
   showScanOptions,
   scanOptions,
   scanPlatformOptions,
-  selectableGameLibrarySkills,
   loadApps,
   loadPlatform,
   clearSearch,
@@ -683,10 +661,6 @@ const {
   removeScannedApp,
   quickAddScannedApp,
   isTauriEnv,
-  isGameLibrarySkillEnabled,
-  toggleGameLibrarySkill,
-  getGameLibrarySkillIcon,
-  getGameLibrarySkillLabel,
   getMessageIcon,
   handleCopySuccess,
   handleCopyError,

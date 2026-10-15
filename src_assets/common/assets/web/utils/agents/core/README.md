@@ -24,7 +24,6 @@ Core 只要求 context 可以被 skill 接收并返回。推荐每个 domain 保
 业务字段由 domain 自己定义，例如：
 
 - `gameLibrary` 使用 `apps`。
-- `diagnostics` 使用 `logs`、`findings` 和 `severitySummary`。
 
 ## 新建 Domain Agent
 

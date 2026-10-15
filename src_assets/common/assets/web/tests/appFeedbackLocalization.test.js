@@ -7,9 +7,6 @@ import cs from '../public/assets/locale/cs.json' with { type: 'json' }
 import zh from '../public/assets/locale/zh.json' with { type: 'json' }
 import { useApps } from '../composables/useApps.js'
 import { AppService } from '../services/appService.js'
-import { createCoverSelectionSkill } from '../utils/agents/gameLibrary/skills/coverSelectionSkill.js'
-import { createGameTitleNormalizeSkill } from '../utils/agents/gameLibrary/skills/gameTitleNormalizeSkill.js'
-import { enhanceScannedGameNames } from '../utils/gameMetadataAi.js'
 import { translateFallback } from '../utils/localizedMessage.js'
 import { useBackground } from '../composables/useBackground.js'
 
@@ -51,40 +48,6 @@ test('scan platform validation and desktop-only warning use the selected locale'
   apps.scanOptions.scope = 'directory'
   await apps.runConfiguredScan()
   assert.equal(apps.message.value, cs.apps.feedback.scan_unavailable)
-})
-
-test('cover progress translates labels without changing game names or counters', async () => {
-  const i18n = translator()
-  i18n.locale.value = 'cs'
-  const progress = []
-  const skill = createCoverSelectionSkill({ findCover: async () => null })
-  await skill.run({ apps: [{ name: 'Example Game' }], options: { translate: i18n.t, onSkillProgress: p => progress.push(p) } })
-  assert.equal(progress[0].detail, 'Hledání shody: Example Game')
-  assert.equal(progress.at(-1).detail, '1/1')
-  assert.equal(progress.at(-1).current, 1)
-  assert.equal(progress.at(-1).total, 1)
-  assert.doesNotMatch(JSON.stringify(progress), /\p{Script=Han}/u)
-})
-
-test('name normalization forwards the UI translator to metadata progress', async () => {
-  const i18n = translator()
-  let received
-  const skill = createGameTitleNormalizeSkill({ enhanceNames: async (apps, options) => { received = options.translate; return apps } })
-  await skill.run({ apps: [{ name: 'Example' }], options: { translate: i18n.t } })
-  assert.equal(received, i18n.t)
-})
-
-test('metadata progress and failed batches stay localized and retain original entries', async context => {
-  context.mock.method(globalThis, 'fetch', async () => { throw new Error('Network unavailable') })
-  context.mock.method(console, 'warn', () => {})
-  const i18n = translator()
-  i18n.locale.value = 'cs'
-  const input = [{ name: 'FeedbackRegressionUniqueGame.exe', cmd: 'C:/Games/FeedbackRegressionUniqueGame.exe' }]
-  const progress = []
-  const output = await enhanceScannedGameNames(input, { translate: i18n.t, onProgress: p => progress.push(p) })
-  assert.deepEqual(output, input)
-  assert.equal(progress.find(p => p.phase === 'batch:error').detail, `${cs.apps.feedback.name_fallback} (1/1)`)
-  assert.doesNotMatch(JSON.stringify(progress), /\p{Script=Han}/u)
 })
 
 test('all locale catalogs supply feedback keys with matching interpolation parameters', () => {

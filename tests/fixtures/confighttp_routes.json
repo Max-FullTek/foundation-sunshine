@@ -261,42 +261,6 @@
     "method": "GET"
   },
   {
-    "pattern": "^/api/ai/config$",
-    "method": "GET"
-  },
-  {
-    "pattern": "^/api/ai/config$",
-    "method": "POST"
-  },
-  {
-    "pattern": "^/api/ai/models$",
-    "method": "GET"
-  },
-  {
-    "pattern": "^/api/ai/chat/completions$",
-    "method": "POST"
-  },
-  {
-    "pattern": "^/api/ai/chat/completions$",
-    "method": "OPTIONS"
-  },
-  {
-    "pattern": "^/api/v1/file-mapping/mappings$",
-    "method": "GET"
-  },
-  {
-    "pattern": "^/api/v1/file-mapping/mappings$",
-    "method": "POST"
-  },
-  {
-    "pattern": "^/api/v1/file-mapping/mappings/([A-Za-z0-9_\\-]{1,64})$",
-    "method": "PATCH"
-  },
-  {
-    "pattern": "^/api/v1/file-mapping/mappings/([A-Za-z0-9_\\-]{1,64})$",
-    "method": "DELETE"
-  },
-  {
     "pattern": "^/images/sunshine.ico$",
     "method": "GET"
   },

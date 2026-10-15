@@ -7,61 +7,14 @@ import { apiPostJson } from '../utils/apiFetch.js'
 import { trackEvents } from '../config/firebase.js'
 import {
   applyGameLibraryOverrides,
-  GAME_LIBRARY_SKILL_IDS,
-  getDefaultEnabledGameLibrarySkillIds,
-  getGameLibraryCapabilityIcon,
-  getGameLibraryCapabilityLabel,
-  getGameLibrarySelectableCapabilities,
   getGameResourceKey,
-  normalizeGameLibrarySkillIds,
   rememberGameLibraryApp,
-  runGameLibraryCuratorAgent,
 } from '../utils/agents/gameLibrary/gameLibraryCuratorAgent.js'
 
 const MESSAGE_DURATION = 3000
-const GAME_LIBRARY_SKILL_PREFS_KEY = 'sunshine-game-library-skills:v1'
 const REMOTE_IMAGE_URL_RE = /^https?:\/\//i
 const COVER_LOCALIZATION_CONCURRENCY = 4
 const COVER_LOCALIZATION_FAILED_FIELD = 'cover-localization-failed'
-
-function getStorage() {
-  return typeof localStorage !== 'undefined' ? localStorage : null
-}
-
-function loadEnabledGameLibrarySkillIds() {
-  const storage = getStorage()
-  if (!storage) {
-    return getDefaultEnabledGameLibrarySkillIds()
-  }
-
-  try {
-    const raw = storage.getItem(GAME_LIBRARY_SKILL_PREFS_KEY)
-    if (!raw) {
-      return getDefaultEnabledGameLibrarySkillIds()
-    }
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed?.enabledSkillIds)) {
-      return getDefaultEnabledGameLibrarySkillIds()
-    }
-    return normalizeGameLibrarySkillIds(parsed.enabledSkillIds)
-  } catch {
-    return getDefaultEnabledGameLibrarySkillIds()
-  }
-}
-
-function saveEnabledGameLibrarySkillIds(skillIds) {
-  const storage = getStorage()
-  if (!storage) return
-
-  try {
-    storage.setItem(
-      GAME_LIBRARY_SKILL_PREFS_KEY,
-      JSON.stringify({ enabledSkillIds: normalizeGameLibrarySkillIds(skillIds) })
-    )
-  } catch {
-    // Skill preferences are convenience state; scanning should continue if persistence fails.
-  }
-}
 
 async function mapWithConcurrency(items, concurrency, mapper) {
   const results = new Array(items.length)
@@ -119,7 +72,6 @@ export function useApps() {
     },
     extractIcons: true,
   })
-  const enabledGameLibrarySkillIds = ref(loadEnabledGameLibrarySkillIds())
   const deleteConfirmIndex = ref(null)
 
   // 批量删除：selectionMode 仅控制 UI 是否显示多选 checkbox；
@@ -150,7 +102,6 @@ export function useApps() {
       index: appIndexByReference.value.get(app) ?? -1,
     }))
   )
-  const selectableGameLibrarySkills = computed(() => getGameLibrarySelectableCapabilities())
   const scanProgressPercent = computed(() => {
     if (!scanProgress.active || scanProgress.indeterminate || !scanProgress.total) return 0
     return Math.max(0, Math.min(100, Math.round((scanProgress.current / scanProgress.total) * 100)))
@@ -212,87 +163,6 @@ export function useApps() {
     })
   }
 
-  const completeScanProgress = (detail = translate('apps.feedback.complete')) => {
-    setScanProgress({
-      stage: translate('apps.feedback.complete'),
-      detail,
-      current: scanProgress.total || scanProgress.current,
-      total: scanProgress.total || scanProgress.current,
-      indeterminate: false,
-    })
-    scanProgressHideTimer = setTimeout(resetScanProgress, 1800)
-  }
-
-  const hasRunnableScanEnhancement = (skillIds) => normalizeGameLibrarySkillIds(skillIds)
-    .some((skillId) => skillId !== GAME_LIBRARY_SKILL_IDS.scanOverrideMemory)
-
-  const updateScanEnhancementProgress = (progress = {}) => {
-    const total = Number(progress.total) || 0
-    const current = Math.min(Number(progress.current) || 0, total || Number(progress.current) || 0)
-
-    if (progress.skillId === GAME_LIBRARY_SKILL_IDS.titleNormalize) {
-      setScanProgress({
-        stage: translate('apps.scan_options.ai_name_cleanup'),
-        detail: progress.detail || progress.message || (total ? `${current}/${total}` : translate('apps.scan_options.ai_name_cleanup')),
-        current,
-        total,
-        indeterminate: !total,
-      })
-      return
-    }
-
-    if (progress.skillId === GAME_LIBRARY_SKILL_IDS.coverSelection) {
-      setScanProgress({
-        stage: translate('apps.scan_options.ai_cover_matching'),
-        detail: progress.detail || progress.message || (total ? `${current}/${total}` : translate('apps.cover_search_loading')),
-        current,
-        total,
-        indeterminate: !total,
-      })
-      return
-    }
-
-    setScanProgress({
-      stage: progress.stage || translate('apps.feedback.enriching'),
-      detail: progress.detail || progress.message || '',
-      current,
-      total,
-      indeterminate: progress.indeterminate ?? !total,
-    })
-  }
-
-  const isGameLibrarySkillEnabled = (skillId) => enabledGameLibrarySkillIds.value.includes(skillId)
-
-  const toggleGameLibrarySkill = (skillId) => {
-    const selectable = selectableGameLibrarySkills.value.some((capability) => capability.skillId === skillId)
-    if (!selectable) return
-
-    const enabled = new Set(enabledGameLibrarySkillIds.value)
-    if (enabled.has(skillId)) {
-      enabled.delete(skillId)
-    } else {
-      enabled.add(skillId)
-    }
-
-    enabledGameLibrarySkillIds.value = normalizeGameLibrarySkillIds(Array.from(enabled))
-    saveEnabledGameLibrarySkillIds(enabledGameLibrarySkillIds.value)
-  }
-
-  const getGameLibrarySkillIcon = (skillId) => getGameLibraryCapabilityIcon(skillId)
-
-  const getGameLibrarySkillLabel = (skillId) => {
-    if (skillId === GAME_LIBRARY_SKILL_IDS.titleNormalize) {
-      return translate('apps.scan_options.ai_name_cleanup')
-    }
-    if (skillId === GAME_LIBRARY_SKILL_IDS.coverSelection) {
-      return translate('apps.scan_options.ai_cover_matching')
-    }
-    const locale = typeof document === 'undefined'
-      ? ''
-      : String(document.documentElement?.getAttribute?.('lang') || '').toLowerCase()
-    return getGameLibraryCapabilityLabel(skillId, { locale })
-  }
-
   const openScanOptions = () => {
     showScanOptions.value = true
   }
@@ -322,23 +192,6 @@ export function useApps() {
 
     showScanOptions.value = false
     await scanGameLibraries({ platforms })
-  }
-
-  const getScanEnhancementMessage = (count) => {
-    const found = translate('apps.feedback.found', { count })
-    const titleEnabled = isGameLibrarySkillEnabled(GAME_LIBRARY_SKILL_IDS.titleNormalize)
-    const coverEnabled = isGameLibrarySkillEnabled(GAME_LIBRARY_SKILL_IDS.coverSelection)
-
-    if (titleEnabled && coverEnabled) {
-      return `${found} ${translate('apps.scan_options.ai_name_cleanup')} / ${translate('apps.scan_options.ai_cover_matching')}…`
-    }
-    if (titleEnabled) {
-      return `${found} ${translate('apps.scan_options.ai_name_cleanup')}…`
-    }
-    if (coverEnabled) {
-      return `${found} ${translate('apps.scan_options.ai_cover_matching')}…`
-    }
-    return found
   }
 
   const createDefaultApp = (overrides = {}) => ({
@@ -661,10 +514,9 @@ export function useApps() {
         const overriddenApps = withScanKeys(applyGameLibraryOverrides(foundApps))
         scannedApps.value = overriddenApps
         showScanResult.value = true
-        showMessage(getScanEnhancementMessage(foundApps.length), APP_CONSTANTS.MESSAGE_TYPES.INFO)
+        showMessage(translate('apps.feedback.found', { count: foundApps.length }), APP_CONSTANTS.MESSAGE_TYPES.INFO)
 
         // 异步更新封面图片
-        asyncEnhanceAndUpdateCovers(overriddenApps, enabledGameLibrarySkillIds.value)
       }
 
       trackEvents.userAction('directory_scanned', { count: foundApps.length, extractIcons })
@@ -727,7 +579,6 @@ export function useApps() {
           `${translate('apps.feedback.found', { count: result.total ?? allGames.length })} (${parts.join(', ')}, ${result.scan_time_ms ?? 0} ms)`,
           APP_CONSTANTS.MESSAGE_TYPES.SUCCESS
         )
-        asyncEnhanceAndUpdateCovers(overriddenApps, enabledGameLibrarySkillIds.value)
       }
 
       trackEvents.userAction('game_libraries_scanned', {
@@ -747,91 +598,6 @@ export function useApps() {
   // 异步更新封面图片
   const getScannedAppKey = getGameResourceKey
 
-  const applyEnhancedScannedApps = (baseList, enhancedList) => {
-    const enhancedByKey = new Map(baseList.map((app, index) => [getScannedAppKey(app, index), enhancedList[index]]))
-    let changed = 0
-
-    scannedApps.value = scannedApps.value.map((current, index) => {
-      const next = enhancedByKey.get(getScannedAppKey(current, index))
-      if (!next) return current
-
-      if (next.name !== current.name || next['canonical-name'] !== current['canonical-name']) {
-        changed++
-      }
-
-      return { ...current, ...next }
-    })
-
-    return changed
-  }
-
-  const asyncEnhanceAndUpdateCovers = async (appList, enabledSkillIds = enabledGameLibrarySkillIds.value) => {
-    const enabled = normalizeGameLibrarySkillIds(enabledSkillIds)
-    const shouldRunEnhancement = hasRunnableScanEnhancement(enabled)
-    let result
-
-    if (!shouldRunEnhancement) {
-      resetScanProgress()
-      return
-    }
-
-    setScanProgress({
-      stage: translate('apps.feedback.enriching'),
-      detail: translate('apps.feedback.found', { count: appList.length }),
-      current: 0,
-      total: appList.length,
-      indeterminate: true,
-    })
-
-    try {
-      result = await runGameLibraryCuratorAgent(appList, {
-        enabledSkills: enabled,
-        translate,
-        onSkillProgress: updateScanEnhancementProgress,
-        onTitlesEnhanced(enhanced, { changed }) {
-          applyEnhancedScannedApps(appList, enhanced)
-          if (changed > 0) {
-            showMessage(`${translate('apps.scan_options.ai_name_cleanup')}: ${changed}`, APP_CONSTANTS.MESSAGE_TYPES.SUCCESS)
-          }
-        },
-        onCoverResolved(next, { key }) {
-          const currentIndex = scannedApps.value.findIndex((current, currentIndex) => getScannedAppKey(current, currentIndex) === key)
-          if (currentIndex !== -1) {
-            scannedApps.value[currentIndex] = {
-              ...scannedApps.value[currentIndex],
-              ...next,
-            }
-          }
-        },
-        onSkillError(skillId, error) {
-          if (skillId === GAME_LIBRARY_SKILL_IDS.titleNormalize) {
-            console.warn('AI name cleanup failed; falling back to original names:', error)
-            showMessage(translate('apps.feedback.name_fallback'), APP_CONSTANTS.MESSAGE_TYPES.INFO)
-          } else if (skillId === GAME_LIBRARY_SKILL_IDS.coverSelection) {
-            console.warn('AI cover selection failed:', error)
-          }
-        },
-      })
-    } catch (error) {
-      console.warn('Game library enrichment failed:', error)
-      showMessage(translate('apps.feedback.enrichment_failed'), APP_CONSTANTS.MESSAGE_TYPES.INFO)
-      completeScanProgress(translate('apps.feedback.enrichment_failed'))
-      return
-    }
-
-    if (enabled.includes(GAME_LIBRARY_SKILL_IDS.coverSelection)) {
-      const coversFound = result.stats?.coversFound || 0
-      const total = appList.length
-      showMessage(
-        `${translate('apps.covers_found')}: ${coversFound}/${total}`,
-        coversFound > 0 ? APP_CONSTANTS.MESSAGE_TYPES.SUCCESS : APP_CONSTANTS.MESSAGE_TYPES.INFO
-      )
-    }
-
-    completeScanProgress(translate('apps.feedback.complete'))
-  }
-
-  // 扫描应用字段处理
   const getScannedAppField = (app, field) => app[field] || app[field.replace(/-/g, '_')] || ''
 
   const localizeScannedAppCover = async (scannedApp) => {
@@ -1007,7 +773,6 @@ export function useApps() {
     scanProgress,
     scanOptions,
     scanPlatformOptions,
-    selectableGameLibrarySkills,
     selectionMode,
     selectedIndices,
     batchDeleteConfirm,
@@ -1051,10 +816,6 @@ export function useApps() {
     closeScanResult,
     removeScannedApp,
     isTauriEnv,
-    isGameLibrarySkillEnabled,
-    toggleGameLibrarySkill,
-    getGameLibrarySkillIcon,
-    getGameLibrarySkillLabel,
     getMessageIcon,
     handleCopySuccess,
     handleCopyError,

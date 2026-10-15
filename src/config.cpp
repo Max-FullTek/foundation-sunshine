@@ -542,8 +542,6 @@ namespace config {
     platf::get_host_name(),  // sunshine_name,
     "[]",
     "sunshine_state.json"s,  // file_state
-    "[]"s,  // file_mappings
-    48020,  // file_mapping_port
     false,  // usb_forwarding_enabled: explicit host opt-in
     0,  // usb_forwarding_port: automatic (main port + 7)
     {},  // external_ip
@@ -1194,7 +1192,7 @@ namespace config {
 
   void apply_config(std::unordered_map<std::string, std::string> &&vars) {
     for (auto &[name, val] : vars) {
-      const auto log_value = (name == "file_mappings" || name == "widget_token") && !val.empty() ? "<redacted>"s : val;
+      const auto log_value = (name == "widget_token") && !val.empty() ? "<redacted>"s : val;
       BOOST_LOG(info) << "config: '"sv << name << "' = "sv << log_value;
       modified_config_settings[name] = val;
     }
@@ -1451,10 +1449,6 @@ namespace config {
     string_f(vars, "clients", nvhttp.clients);
     path_f(vars, "log_path", config::sunshine.log_file);
     path_f(vars, "file_state", nvhttp.file_state);
-    string_f(vars, "file_mappings", nvhttp.file_mappings);
-    int file_mapping_port = nvhttp.file_mapping_port;
-    int_between_f(vars, "file_mapping_port", file_mapping_port, { 1024, 65535 });
-    nvhttp.file_mapping_port = static_cast<std::uint16_t>(file_mapping_port);
     bool_f(vars, "usb_forwarding_enabled", nvhttp.usb_forwarding_enabled);
     int usb_forwarding_port = nvhttp.usb_forwarding_port;
     int_f(vars, "usb_forwarding_port", usb_forwarding_port);
