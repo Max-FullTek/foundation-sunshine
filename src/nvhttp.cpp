@@ -1167,7 +1167,7 @@ namespace nvhttp {
       };
 
     // AI LLM proxy route uses client cert auth from pairing.
-    https_server.resource["^/ai/completions$"]["POST"] = ai_api::completions;
+    // Personal fork: the paired-client AI endpoint is intentionally absent.
 
     https_server.config.reuse_address = true;
     https_server.config.address = bind_address;

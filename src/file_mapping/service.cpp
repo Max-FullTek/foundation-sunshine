@@ -15,6 +15,11 @@
 using namespace std::literals;
 
 namespace file_mapping {
+  namespace {
+    // Folder sharing is outside this personal fork's supported features.
+    constexpr bool folder_sharing_enabled = false;
+  }
+
   service_t::~service_t() {
     stop();
   }
@@ -22,6 +27,12 @@ namespace file_mapping {
   void
   service_t::start(config_t config) {
     stop();
+
+    if (!folder_sharing_enabled) {
+      std::scoped_lock lock { mutex_ };
+      start_error_ = "Folder sharing is disabled in this personal fork";
+      return;
+    }
 
     config_ = std::move(config);
     if (config_.bind_address.empty()) {
@@ -113,7 +124,7 @@ namespace file_mapping {
   file_mapping_http::capability_state_t
   service_t::make_capability_state(std::string client_uuid) {
     file_mapping_http::capability_state_t state;
-    state.enabled = true;
+    state.enabled = folder_sharing_enabled;
     state.session_endpoint = "/api/v1/file-mapping/session";
     state.client_uuid = std::move(client_uuid);
     state.diagnostics["bind_address"] = config_.bind_address.empty() ? "0.0.0.0" : config_.bind_address;

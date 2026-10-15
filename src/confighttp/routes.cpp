@@ -35,8 +35,7 @@ namespace confighttp {
     confighttp::runtime::register_routes(server);
     confighttp::integrations::register_routes(server);
     confighttp::proxies::register_routes(server);
-    file_mapping::config_http::register_routes(server);
-    ai::http::register_routes(server);
+    // Personal fork: folder sharing and AI are not exposed through the Web UI.
 
     // Clipboard sync routes are registered in a sibling module so the
     // Web UI server doesn't grow further. They reuse our
