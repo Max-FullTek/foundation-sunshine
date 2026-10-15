@@ -4,7 +4,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$repository = 'qiin2333/sunshine-control-panel'
+$panelUrl = git config -f .gitmodules --get submodule.src_assets/common/sunshine-control-panel.url
+if ($LASTEXITCODE -ne 0 -or $panelUrl -notmatch '^https://github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?)(?:\.git)?$') {
+    throw 'Panel must use an explicit GitHub repository URL in .gitmodules'
+}
+$repository = $Matches[1]
 $entry = git ls-tree HEAD src_assets/common/sunshine-control-panel
 if ($LASTEXITCODE -ne 0 -or $entry -notmatch '^160000 commit ([0-9a-f]{40})\s') {
     throw 'Unable to resolve the committed Panel submodule'
@@ -44,11 +48,20 @@ New-Item -ItemType Directory -Path $download | Out-Null
 gh run download $RunId --repo $repository --name sunshine-gui-windows-x64 --dir $download
 if ($LASTEXITCODE -ne 0) { throw "Unable to download Panel artifact; diagnostic files: $download" }
 $archive = Join-Path $download 'sunshine-gui-windows-x64.zip'
+$manifest = Get-Content -LiteralPath (Join-Path $download 'gui-build.json') -Raw | ConvertFrom-Json
+if ($manifest.repository -ne $repository -or $manifest.commit -ne $expectedCommit -or
+    [string]$manifest.run_id -ne [string]$RunId -or $manifest.sha256 -notmatch '^[0-9a-fA-F]{64}$') {
+    throw 'GUI build provenance does not match the selected repository, commit and run'
+}
+$archiveHash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
+if ($archiveHash -ne $manifest.sha256) {
+    throw 'GUI bundle checksum mismatch'
+}
 Expand-Archive -LiteralPath $archive -DestinationPath $Destination
 foreach ($name in @('sunshine-gui.exe', 'alkaidlab-plugin-stylus.dll')) {
     $file = Get-Item -LiteralPath (Join-Path $Destination $name)
     if ($file.Length -eq 0) { throw "Empty required GUI file: $name" }
 }
-@{ repository = $repository; run_id = $RunId; commit = $expectedCommit } |
+@{ repository = $repository; run_id = $RunId; commit = $expectedCommit; sha256 = $archiveHash.ToLowerInvariant() } |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $Destination 'paired-build.json') -Encoding utf8
 Write-Output "Paired GUI bundle verified at $expectedCommit in $Destination"

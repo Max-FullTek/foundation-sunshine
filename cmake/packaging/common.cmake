@@ -76,6 +76,10 @@ if(WIN32)
         install(FILES "${GUI_DIR}/alkaidlab-plugin-stylus.dll"
             DESTINATION "${SUNSHINE_ASSETS_DIR}/gui"
             COMPONENT gui)
+        install(FILES "${GUI_DIR}/paired-build.json"
+            DESTINATION "${SUNSHINE_ASSETS_DIR}/gui"
+            COMPONENT gui
+            OPTIONAL)
         # Tauri may generate this file after CMake configure time. Register an
         # optional install rule now so clean local builds can still include it.
         install(FILES "${GUI_DIR}/WebView2Loader.dll"

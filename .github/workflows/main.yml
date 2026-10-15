@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
     inputs:
       gui_run_id:
-        description: 'Optional successful Panel artifact run; its commit must match the Panel submodule'
+        description: 'Optional Panel run ID; otherwise discover a verified build for the pinned Panel commit'
         type: string
         default: ''
       rtx_hdr:
@@ -104,6 +104,17 @@ jobs:
           GIT_CONFIG_COUNT: '1'
           GIT_CONFIG_KEY_0: core.longpaths
           GIT_CONFIG_VALUE_0: 'true'
+
+      - name: Fetch paired GUI artifact
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GUI_RUN_ID: ${{ inputs.gui_run_id }}
+        run: |
+          $arguments = @{ Destination = "$env:RUNNER_TEMP/paired-gui" }
+          if ($env:GUI_RUN_ID) { $arguments.RunId = $env:GUI_RUN_ID }
+          ./scripts/fetch-paired-gui.ps1 @arguments
+          "GUI_BUNDLE_DIR=$env:RUNNER_TEMP/paired-gui" >> $env:GITHUB_ENV
 
       - name: Setup Dependencies Windows
         uses: msys2/setup-msys2@v2
@@ -217,18 +228,6 @@ jobs:
           restore-keys: |
             ccache-windows-
 
-      - name: Fetch paired GUI artifact
-        if: github.event_name == 'workflow_dispatch' && inputs.gui_run_id != ''
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GUI_RUN_ID: ${{ inputs.gui_run_id }}
-        run: |
-          $arguments = @{ Destination = "$env:RUNNER_TEMP/paired-gui" }
-          if ($env:GUI_RUN_ID) { $arguments.RunId = $env:GUI_RUN_ID }
-          ./scripts/fetch-paired-gui.ps1 @arguments
-          "GUI_BUNDLE_DIR=$env:RUNNER_TEMP/paired-gui" >> $env:GITHUB_ENV
-
       - name: Configure Windows
         id: configure_windows
         shell: msys2 {0}
@@ -258,10 +257,10 @@ jobs:
         run: |
           mkdir -p build
           ccache --zero-stats
-          gui_options=()
-          if [[ -n "${GUI_BUNDLE_DIR:-}" ]]; then
-            gui_options=(-DFETCH_GUI=OFF "-DGUI_DIR=$GUI_BUNDLE_DIR")
-          fi
+          # Fail closed: never fall back to an unrelated upstream GUI release.
+          test -n "${GUI_BUNDLE_DIR:-}"
+          test -f "$GUI_BUNDLE_DIR/paired-build.json"
+          gui_options=(-DFETCH_GUI=OFF "-DGUI_DIR=$GUI_BUNDLE_DIR")
           cmake \
             -B build \
             -G Ninja \
