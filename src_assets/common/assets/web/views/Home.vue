@@ -19,22 +19,10 @@
             <h1 id="home-title" class="page-title">{{ $t('index.welcome') }}</h1>
             <p class="page-subtitle">{{ $t('index.description') }}</p>
           </div>
-          <component
-            v-if="hostStatus === 'error' || versionCheckStatus !== VERSION_CHECK_STATUS.ERROR"
-            :is="showVersionDetails ? 'button' : 'div'"
-            class="home-status"
-            :class="[`home-status-${statusState}`, { 'home-status-action': showVersionDetails }]"
-            :type="showVersionDetails ? 'button' : undefined"
-            :role="showVersionDetails ? 'button' : 'status'"
-            :aria-live="statusState === 'loading' ? 'polite' : 'off'"
-            :aria-label="statusAriaLabel"
-            :aria-controls="showVersionDetails ? 'version-details' : undefined"
-            :title="statusTitle"
-            @click="handleStatusClick"
-          >
+          <div class="home-status" :class="`home-status-${hostStatus}`" role="status">
             <span class="home-status-dot" aria-hidden="true"></span>
-            <span>{{ statusLabel }}</span>
-          </component>
+            <span>{{ hostStatus === 'error' ? $t('_common.error') : versionLabel }}</span>
+          </div>
         </div>
 
         <div class="host-overview">
@@ -96,21 +84,6 @@
       <ErrorLogs :fatal-logs="fatalLogs" />
 
       <!-- 版本信息 -->
-      <VersionCard
-        v-if="showVersionDetails"
-        id="version-details"
-        :version="version"
-        :github-version="githubVersion"
-        :pre-release-version="preReleaseVersion"
-        :notify-pre-releases="notifyPreReleases"
-        :loading="loading"
-        :installed-version-not-stable="installedVersionNotStable"
-        :stable-build-available="stableBuildAvailable"
-        :pre-release-build-available="preReleaseBuildAvailable"
-        :build-version-is-dirty="buildVersionIsDirty"
-        :parsed-stable-body="parsedStableBody"
-        :parsed-pre-release-body="parsedPreReleaseBody"
-      />
 
       <!-- 资源卡片 -->
       <ResourceCard class="home-resources" />
@@ -125,8 +98,6 @@ import Navbar from '../components/layout/Navbar.vue'
 import SetupWizard from '../components/SetupWizard.vue'
 import ResourceCard from '../components/common/ResourceCard.vue'
 import ErrorLogs from '../components/common/ErrorLogs.vue'
-import VersionCard from '../components/common/VersionCard.vue'
-import { VERSION_CHECK_STATUS, useVersion } from '../composables/useVersion.js'
 import { useLogs } from '../composables/useLogs.js'
 import { useSetupWizard } from '../composables/useSetupWizard.js'
 import { trackEvents } from '../config/firebase.js'
@@ -164,50 +135,10 @@ const quickActions = [
   },
 ]
 
-const hasStableUpdate = computed(() => stableBuildAvailable.value)
-const hasPreReleaseUpdate = computed(() => notifyPreReleases.value && preReleaseBuildAvailable.value)
-
-const statusState = computed(() => {
-  if (hostStatus.value === 'error') return 'error'
-  if (
-    hostStatus.value === 'loading' ||
-    versionCheckStatus.value === VERSION_CHECK_STATUS.IDLE ||
-    versionCheckStatus.value === VERSION_CHECK_STATUS.CHECKING
-  ) {
-    return 'loading'
-  }
-  if (versionCheckStatus.value === VERSION_CHECK_STATUS.ERROR) return 'unavailable'
-  if (hasStableUpdate.value || hasPreReleaseUpdate.value) return 'update'
-  return 'ready'
-})
-
-const statusLabel = computed(() => {
-  if (statusState.value === 'loading') return t('index.loading_latest')
-  if (statusState.value === 'error' || statusState.value === 'unavailable') return t('_common.error')
-  if (hasStableUpdate.value) return t('index.new_stable')
-  if (hasPreReleaseUpdate.value) return t('index.new_pre_release')
-  return t('index.version_latest')
-})
-
-const statusAriaLabel = computed(() => statusLabel.value)
-
 const versionLabel = computed(() => {
-  const currentVersion = version.value?.version || hostConfig.value?.version
-  return currentVersion ? `Ver ${currentVersion}` : t('index.loading_latest')
+  const currentVersion = hostConfig.value?.version
+  return currentVersion ? `Ver ${currentVersion}` : t('index.current_version')
 })
-
-const showVersionDetails = computed(
-  () =>
-    buildVersionIsDirty.value ||
-    installedVersionNotStable.value ||
-    hasStableUpdate.value ||
-    hasPreReleaseUpdate.value,
-)
-
-const handleStatusClick = () => {
-  if (!showVersionDetails.value) return
-  document.getElementById('version-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
 
 const countCollection = (payload, key) => {
   if (Array.isArray(payload)) return payload.length
@@ -217,22 +148,6 @@ const countCollection = (payload, key) => {
 }
 
 // 使用组合式函数
-const {
-  version,
-  githubVersion,
-  preReleaseVersion,
-  notifyPreReleases,
-  versionCheckStatus,
-  loading,
-  installedVersionNotStable,
-  stableBuildAvailable,
-  preReleaseBuildAvailable,
-  buildVersionIsDirty,
-  parsedStableBody,
-  parsedPreReleaseBody,
-  fetchVersions,
-} = useVersion()
-
 const { fatalLogs, fetchLogs } = useLogs()
 
 const { showSetupWizard, adapters, displayDevices, hasLocale, checkSetupWizard, onSetupComplete } = useSetupWizard()
@@ -284,12 +199,10 @@ onMounted(async () => {
     if (clientsResult.status === 'fulfilled') clientsCount.value = countCollection(clientsResult.value, 'clients')
 
     // 版本和日志互不阻塞，避免外部版本检查拖延本机状态提示
-    await Promise.allSettled([fetchVersions(config), fetchLogs()])
+    await fetchLogs()
 
     // 更新页面标题
-    if (version.value) {
-      document.title += ` Ver ${version.value.version}`
-    }
+    if (config.version) document.title += ` Ver ${config.version}`
   } catch (e) {
     hostStatus.value = 'error'
     // 在预览模式下，API 不可用是正常的，只记录警告

@@ -68,7 +68,7 @@ set_tests_properties(webhook_transport_tests PROPERTIES TIMEOUT 60)
 add_executable(http_safety_unit_tests
         ${CMAKE_SOURCE_DIR}/tests/tools/test_http_safety.cpp)
 target_include_directories(http_safety_unit_tests PRIVATE "${CMAKE_SOURCE_DIR}")
-target_link_libraries(http_safety_unit_tests PRIVATE Boost::winapi gtest_main
+target_link_libraries(http_safety_unit_tests PRIVATE Boost::filesystem gtest_main
         sunshine_project_options sunshine_coverage)
 target_compile_definitions(http_safety_unit_tests PRIVATE ${SUNSHINE_DEFINITIONS})
 set_target_properties(http_safety_unit_tests PROPERTIES CXX_STANDARD 23)
