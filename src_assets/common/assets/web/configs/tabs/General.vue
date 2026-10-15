@@ -118,15 +118,6 @@ function handleCommandOrderChanged(newOrder) {
     </div>
 
     <div class="settings-grid mt-3">
-      <!-- Notify Pre-Releases -->
-      <Checkbox
-        container-class="settings-field settings-toggle-field"
-        id="notify_pre_releases"
-        locale-prefix="config"
-        v-model="config.notify_pre_releases"
-        default="false"
-      ></Checkbox>
-
       <!-- Enable system tray -->
       <Checkbox
         v-if="!isEmbeddedGui"

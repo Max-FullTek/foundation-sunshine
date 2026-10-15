@@ -30,7 +30,6 @@ const DEFAULT_TABS = [
       sunshine_name: '',
       min_log_level: 2,
       global_prep_cmd: '[]',
-      notify_pre_releases: 'disabled',
       stop_on_last_video_session: 'disabled',
     },
   },
