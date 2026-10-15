@@ -104,6 +104,7 @@ namespace abr {
     state.app_name = app_name;
     state.consecutive_high_loss = 0;
     state.stable_ticks = 0;
+    state.last_fallback_time = std::chrono::steady_clock::time_point {};
     // Apply mode presets only for bounds that were not explicitly configured.
     // This preserves a client/host maxBitrate cap when minBitrate is omitted.
     if (state.config.min_bitrate_kbps <= 0 || state.config.max_bitrate_kbps <= 0) {
@@ -206,13 +207,11 @@ namespace abr {
       state.last_fallback_time = now;
       auto action = fallback_decision(state, feedback);
       if (action.new_bitrate_kbps > 0) {
-        if (action.new_bitrate_kbps > 0) {
-          state.current_bitrate_kbps = action.new_bitrate_kbps;
-          BOOST_LOG(info) << "ABR fallback for '" << client_name
-                          << "': " << action.new_bitrate_kbps << " Kbps"
-                          << " (" << action.reason << ")";
-          result_action = action;
-        }
+        state.current_bitrate_kbps = action.new_bitrate_kbps;
+        BOOST_LOG(info) << "ABR fallback for '" << client_name
+                        << "': " << action.new_bitrate_kbps << " Kbps"
+                        << " (" << action.reason << ")";
+        result_action = action;
       }
     }
 
@@ -233,19 +232,6 @@ namespace abr {
 
 #ifdef SUNSHINE_TESTS
   #include <gtest/gtest.h>
-
-namespace {
-
-  abr::session_state_t
-  make_test_session_state(int current_bitrate_kbps = 20000, int min_bitrate_kbps = 10000, int max_bitrate_kbps = 50000) {
-    abr::session_state_t state;
-    state.current_bitrate_kbps = current_bitrate_kbps;
-    state.config.min_bitrate_kbps = min_bitrate_kbps;
-    state.config.max_bitrate_kbps = max_bitrate_kbps;
-    return state;
-  }
-
-}  // namespace
 
 TEST(AbrConfigTests, PreservesExplicitMaxBitrateWhenMinIsOmitted) {
   abr::config_t cfg;

@@ -2,6 +2,7 @@
  * @file tests/tools/test_http_safety.cpp
  * @brief Asset path traversal regression tests.
  */
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -52,14 +53,6 @@ namespace {
     return success;
   }
 #endif
-
-  template <class Predicate>
-  bool
-  wait_until(Predicate ready, std::chrono::seconds timeout = 8s) {
-    const auto deadline = std::chrono::steady_clock::now() + timeout;
-    while (!ready() && std::chrono::steady_clock::now() < deadline) std::this_thread::sleep_for(10ms);
-    return ready();
-  }
 
   class HttpSafety: public testing::Test {
   protected:
