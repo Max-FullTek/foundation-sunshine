@@ -9,10 +9,10 @@
       <!-- QR Code Pairing -->
       <ConfirmDialog :show="qrPanelOpen" dialog-id="qr-pair-dialog" :title="$t('pin.qr_pairing')" :close-label="$t('_common.cancel')" :dismissible="!qrLoading" @close="closeQrPanel">
         <div class="card-body text-center">
-          <p class="text-muted mb-3">{{ $t('pin.qr_pairing_desc') }}</p>
+          <p class="text-muted mb-3 qr-copy"><span v-for="line in shellT.pairingCopy.description" :key="line">{{ line }}</span></p>
           <div class="alert alert-danger d-flex align-items-start mb-3" style="font-size: 0.85rem;">
             <i class="fas fa-exclamation-triangle me-2 mt-1"></i>
-            <span>{{ $t('pin.qr_pairing_warning') }}</span>
+            <span class="qr-copy"><span v-for="line in shellT.pairingCopy.warning" :key="line">{{ line }}</span></span>
           </div>
 
           <!-- QR Code Display -->
@@ -84,7 +84,7 @@
             class="form-control my-4"
             required
           />
-          <button class="btn btn-primary">{{ $t('pin.send') }}</button>
+          <button class="btn btn-primary">{{ shellT.pairingCopy.verify }}</button>
         </div>
         <div class="alert alert-warning">
           <b>{{ $t('_common.warning') }}</b> {{ $t('pin.warning_msg') }}
@@ -121,7 +121,6 @@
             <div class="alert alert-danger" v-if="unpairAllStatus === false">
               {{ $t('troubleshooting.unpair_all_error') }}
             </div>
-            <p class="mb-3 text-muted">{{ $t('pin.remove_paired_devices_desc') }}</p>
           </div>
 
           <!-- 加载状态 -->
@@ -313,7 +312,7 @@
             </div>
           </div>
           <!-- 空状态 -->
-          <div v-else-if="!loading" class="empty-state" role="status">
+          <div v-else-if="!loading" class="paired-empty-state" role="status">
             <div class="text-center">
               <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
               <p class="mb-0">
@@ -471,6 +470,8 @@ watch(clients, initTooltips, { deep: true })
 </style>
 
 <style scoped lang="less">
+.qr-copy > span { display:block; }
+.paired-empty-state { text-align:center; padding:40px 20px; }
 .paired-heading { font-size:18px; font-weight:600; }
 .pin-page {
   min-height: 100%;

@@ -4,22 +4,20 @@
     <main class="container-fluid">
       <PageHeader page="apps">
         <template #actions>
+          <div class="search-container apps-heading-search">
+            <div class="search-box">
+              <i class="fas fa-search search-icon" aria-hidden="true"></i>
+              <input class="form-control search-input" v-model="searchQuery" :placeholder="$t('apps.search_placeholder')" :aria-label="$t('apps.search_placeholder')" />
+              <button v-if="searchQuery" type="button" class="btn-clear-search" :aria-label="$t('apps.clear_search')" @click="clearSearch"><i class="fas fa-times" aria-hidden="true"></i></button>
+            </div>
+          </div>
           <button class="btn btn-primary" type="button" :disabled="isSaving" @click="newApp">{{ $t('apps.add_new') }}</button>
-          <button class="btn btn-outline-secondary" type="button" :disabled="isSaving" @click="restoreDefaultApps">{{ $t('apps.restore_default_apps') }}</button>
         </template>
       </PageHeader>
-      <details open class="apps-guide mb-4">
-        <summary>{{ shellT.appsGuide.title }}</summary>
+      <section class="apps-guide mb-4">
+        <h2>{{ shellT.appsGuide.title }}</h2>
         <p>{{ shellT.appsGuide.body }}</p>
-        <p>{{ shellT.appsGuide.restore }}</p>
-      </details>
-      <div class="search-container mb-4">
-        <div class="search-box">
-          <i class="fas fa-search search-icon" aria-hidden="true"></i>
-          <input class="form-control search-input" v-model="searchQuery" :placeholder="$t('apps.search_placeholder')" :aria-label="$t('apps.search_placeholder')" />
-          <button v-if="searchQuery" type="button" class="btn-clear-search" :aria-label="$t('apps.clear_search')" @click="clearSearch"><i class="fas fa-times" aria-hidden="true"></i></button>
-        </div>
-      </div>
+      </section>
       <div class="apps-grid-container">
         <draggable v-if="!searchQuery" v-model="apps" :item-key="getAppRenderKey" class="apps-grid" handle=".drag-handle" :disabled="isSaving" :delay="180" :delay-on-touch-only="true" :touch-start-threshold="8" :fallback-tolerance="8" ghost-class="app-card-ghost" @start="onDragStart" @end="onDragEnd">
           <template #item="{ element: app, index }">
@@ -36,10 +34,25 @@
         <div v-if="!filteredAppsWithIndex.length" class="empty-state" role="status"><p>{{ $t(searchQuery ? 'apps.scan_result_no_matches' : 'apps.no_apps') }}</p></div>
       </div>
       <div v-if="message" class="alert app-status mt-3" :class="messageClass" role="status">{{ message }}</div>
+      <section class="apps-restore apps-guide mt-4">
+        <div>
+          <h2>{{ shellT.appsGuide.restoreLabel }}</h2>
+          <p>{{ shellT.appsGuide.restore }}</p>
+        </div>
+        <button class="btn btn-outline-secondary" type="button" :disabled="isSaving" @click="restoreDefaultApps">{{ shellT.appsGuide.restoreLabel }}</button>
+      </section>
       <AppEditor v-if="editingApp" :app="editingApp" :platform="platform" :disabled="isSaving" @save-app="handleSaveApp" @close="closeAppEditor" />
       <ConfirmDialog :show="deleteConfirmIndex !== null" dialog-id="delete-app-confirm" :title="$t('_common.delete')" :close-label="$t('_common.cancel')" @close="cancelDeleteApp">
         <p>{{ apps[deleteConfirmIndex]?.name }}</p>
-        <template #actions><button class="btn btn-danger" @click="confirmDeleteApp">{{ $t('_common.delete') }}</button></template>
+        <template #actions>
+      <div class="search-container apps-heading-search">
+        <div class="search-box">
+          <i class="fas fa-search search-icon" aria-hidden="true"></i>
+          <input class="form-control search-input" v-model="searchQuery" :placeholder="$t('apps.search_placeholder')" :aria-label="$t('apps.search_placeholder')" />
+          <button v-if="searchQuery" type="button" class="btn-clear-search" :aria-label="$t('apps.clear_search')" @click="clearSearch"><i class="fas fa-times" aria-hidden="true"></i></button>
+        </div>
+      </div>
+<button class="btn btn-danger" @click="confirmDeleteApp">{{ $t('_common.delete') }}</button></template>
       </ConfirmDialog>
     </main>
   </div>
@@ -69,11 +82,18 @@ watch(searchQuery, () => debouncedSearch.value?.())
 @import '../styles/apps/feedback.less';
 .apps-page .app-card { animation:none; }
 .apps-page .app-card:hover { transform:none; }
-.apps-page .search-container { justify-content:flex-start; }
-.apps-page .search-box { max-width:520px; width:100%; }
-.apps-guide { color:var(--ui-text-secondary); font-size:13px; line-height:1.7; }
-.apps-guide summary { cursor:pointer; color:var(--ui-text-primary); }
-.apps-guide p { max-width:900px; margin:10px 0 0; }
+.apps-page .apps-heading-search { margin:0; gap:0; flex-wrap:nowrap; }
+.apps-page .apps-heading-search .search-box { width:240px; min-width:0; max-width:100%; }
+.apps-heading-search .search-input { padding:8px 32px 8px 38px; font-size:14px; }
+.apps-heading-search .search-icon { left:10px; width:20px; height:20px; font-size:14px; }
+.apps-heading-search .btn-clear-search { right:6px; }
+.apps-guide { padding:24px; background:var(--ui-surface-strong); border:1px solid var(--ui-border); border-radius:var(--ui-radius-lg); }
+.apps-guide h2 { font-size:19px; margin:0 0 18px; font-weight:600; color:var(--ui-text-primary); }
+.apps-guide p { font-size:14px; line-height:1.9; margin:0; color:var(--ui-text-secondary); }
+.apps-restore { display:flex; flex-wrap:wrap; align-items:center; gap:20px; }
+.apps-restore > div { flex:1; min-width:min(100%, 300px); }
+.apps-restore .btn { flex-shrink:0; }
+@media (max-width:600px) { .apps-page .apps-heading-search .search-box { width:min(240px, 55vw); } }
 .app-status.alert { background:var(--ui-surface-strong); border-radius:var(--ui-radius-md); box-shadow:var(--ui-shadow-sm); }
 .app-status.alert-error { color:var(--ui-danger-text); border-color:var(--ui-danger-border); }
 </style>
