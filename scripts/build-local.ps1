@@ -80,6 +80,8 @@ $start = New-Object Diagnostics.ProcessStartInfo
 $start.FileName = Join-Path $paths.msys 'usr\bin\bash.exe'
 $start.UseShellExecute = $false
 $start.CreateNoWindow = $true
+$start.RedirectStandardOutput = $true
+$start.RedirectStandardError = $true
 $start.WorkingDirectory = $project
 $start.EnvironmentVariables['MSYSTEM'] = 'UCRT64'
 $start.EnvironmentVariables['CHERE_INVOKING'] = '1'
@@ -92,6 +94,10 @@ $start.EnvironmentVariables['TEMP'] = $tempDir
 $start.EnvironmentVariables['TMP'] = $tempDir
 $start.Arguments = "--login .local/$scriptName"
 $process = [Diagnostics.Process]::Start($start)
+$outputTask = $process.StandardOutput.ReadToEndAsync()
+$errorTask = $process.StandardError.ReadToEndAsync()
 $process.WaitForExit()
+[Console]::Out.Write($outputTask.GetAwaiter().GetResult())
+[Console]::Error.Write($errorTask.GetAwaiter().GetResult())
 if ($process.ExitCode -ne 0) { throw "Local $Task failed ($($process.ExitCode)); outputs preserved" }
 exit 0

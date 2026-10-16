@@ -50,13 +50,19 @@ function Invoke-LocalShell([string]$Command) {
     $start.FileName = Join-Path $msys 'usr\bin\bash.exe'
     $start.UseShellExecute = $false
     $start.CreateNoWindow = $true
+    $start.RedirectStandardOutput = $true
+    $start.RedirectStandardError = $true
     $start.WorkingDirectory = $project
     $start.EnvironmentVariables['MSYSTEM'] = 'UCRT64'
     $start.EnvironmentVariables['CHERE_INVOKING'] = '1'
     $start.EnvironmentVariables['MSYS2_PATH_TYPE'] = 'minimal'
     $start.Arguments = '--login -c "' + $Command.Replace('"', '\"') + '"'
     $process = [Diagnostics.Process]::Start($start)
+    $outputTask = $process.StandardOutput.ReadToEndAsync()
+    $errorTask = $process.StandardError.ReadToEndAsync()
     $process.WaitForExit()
+    [Console]::Out.Write($outputTask.GetAwaiter().GetResult())
+    [Console]::Error.Write($errorTask.GetAwaiter().GetResult())
     if ($process.ExitCode -ne 0) { throw "MSYS2 step failed ($($process.ExitCode))" }
 }
 
