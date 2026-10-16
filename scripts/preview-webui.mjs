@@ -2,7 +2,7 @@
 import http from 'node:http'
 import { readFile } from 'node:fs/promises'
 import { resolve, extname, sep } from 'node:path'
-const root = resolve('build/assets/web')
+const root = resolve(process.env.SUNSHINE_ASSETS_DIR || 'build', 'assets/web')
 const sample = process.argv.includes('--sample')
 const sampleConfig = { platform:'windows', version:'介面預覽', sunshine_name:'Sunshine Lite 範例主機', locale:'zh_TW', setup_wizard_completed:true, adapters:[], display_devices:[], controller:'enabled', keyboard:'enabled', mouse:'enabled' }
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.ico': 'image/x-icon' }

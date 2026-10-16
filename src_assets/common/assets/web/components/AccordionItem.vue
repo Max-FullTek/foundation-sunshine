@@ -39,3 +39,25 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+.accordion-item {
+  --bs-accordion-color: var(--ui-text-primary);
+  --bs-accordion-bg: var(--ui-surface);
+  --bs-accordion-border-color: var(--ui-border);
+  --bs-accordion-btn-color: var(--ui-text-primary);
+  --bs-accordion-btn-bg: var(--ui-surface);
+  --bs-accordion-active-color: var(--ui-accent);
+  --bs-accordion-active-bg: var(--ui-accent-soft);
+  --bs-accordion-btn-focus-box-shadow: 0 0 0 3px var(--ui-accent-soft);
+}
+.accordion-button::after {
+  background-image: none;
+  width: 9px;
+  height: 9px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+}
+.accordion-button:not(.collapsed)::after { transform: rotate(225deg); }
+</style>
