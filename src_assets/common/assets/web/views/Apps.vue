@@ -8,6 +8,11 @@
           <button class="btn btn-outline-secondary" type="button" :disabled="isSaving" @click="restoreDefaultApps">{{ $t('apps.restore_default_apps') }}</button>
         </template>
       </PageHeader>
+      <details open class="apps-guide mb-4">
+        <summary>{{ shellT.appsGuide.title }}</summary>
+        <p>{{ shellT.appsGuide.body }}</p>
+        <p>{{ shellT.appsGuide.restore }}</p>
+      </details>
       <div class="search-container mb-4">
         <div class="search-box">
           <i class="fas fa-search search-icon" aria-hidden="true"></i>
@@ -30,7 +35,7 @@
         </div>
         <div v-if="!filteredAppsWithIndex.length" class="empty-state" role="status"><p>{{ $t(searchQuery ? 'apps.scan_result_no_matches' : 'apps.no_apps') }}</p></div>
       </div>
-      <div v-if="message" class="alert mt-3" :class="messageClass" role="status">{{ message }}</div>
+      <div v-if="message" class="alert app-status mt-3" :class="messageClass" role="status">{{ message }}</div>
       <AppEditor v-if="editingApp" :app="editingApp" :platform="platform" :disabled="isSaving" @save-app="handleSaveApp" @close="closeAppEditor" />
       <ConfirmDialog :show="deleteConfirmIndex !== null" dialog-id="delete-app-confirm" :title="$t('_common.delete')" :close-label="$t('_common.cancel')" @close="cancelDeleteApp">
         <p>{{ apps[deleteConfirmIndex]?.name }}</p>
@@ -42,6 +47,7 @@
 <script setup>
 import { defineAsyncComponent, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useI18n as useShellI18n } from '@/desktop/i18n/index.js'
 import Navbar from '../components/layout/Navbar.vue'
 import PageHeader from '../components/common/PageHeader.vue'
 import ConfirmDialog from '../components/common/ConfirmDialog.vue'
@@ -50,6 +56,7 @@ import AppCard from '../components/AppCard.vue'
 import draggable from 'vuedraggable-es'
 const AppEditor = defineAsyncComponent(() => import('../components/AppEditor.vue'))
 const { t } = useI18n()
+const { t: shellT } = useShellI18n()
 const { apps, filteredAppsWithIndex, getAppRenderKey, searchQuery, clearSearch, debouncedSearch, editingApp, platform, isSaving, isDragging, message, messageClass, init, loadApps, loadPlatform, newApp, editApp, closeAppEditor, handleSaveApp, showDeleteForm, deleteConfirmIndex, cancelDeleteApp, confirmDeleteApp, restoreDefaultApps, onDragStart, onDragEnd, handleCopySuccess, handleCopyError } = useApps()
 onMounted(async () => { init(t); await Promise.all([loadApps(), loadPlatform()]) })
 watch(searchQuery, () => debouncedSearch.value?.())
@@ -64,5 +71,9 @@ watch(searchQuery, () => debouncedSearch.value?.())
 .apps-page .app-card:hover { transform:none; }
 .apps-page .search-container { justify-content:flex-start; }
 .apps-page .search-box { max-width:520px; width:100%; }
-@media (max-width:600px) { .apps-page .apps-grid { grid-template-columns:1fr; } }
+.apps-guide { color:var(--ui-text-secondary); font-size:13px; line-height:1.7; }
+.apps-guide summary { cursor:pointer; color:var(--ui-text-primary); }
+.apps-guide p { max-width:900px; margin:10px 0 0; }
+.app-status.alert { background:var(--ui-surface-strong); border-radius:var(--ui-radius-md); box-shadow:var(--ui-shadow-sm); }
+.app-status.alert-error { color:var(--ui-danger-text); border-color:var(--ui-danger-border); }
 </style>

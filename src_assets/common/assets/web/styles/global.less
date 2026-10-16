@@ -553,3 +553,14 @@ body {
   background-color: var(--ui-accent);
   color: var(--ui-accent-contrast);
 }
+
+// Shared empty state for application and paired-device lists.
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  background: var(--ui-surface);
+  border: 1px dashed var(--ui-border-strong);
+  border-radius: var(--ui-radius-lg);
+  backdrop-filter: blur(10px);
+}

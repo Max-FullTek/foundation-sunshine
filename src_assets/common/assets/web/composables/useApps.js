@@ -326,7 +326,7 @@ export function useApps() {
 
   const onDragEnd = async () => {
     isDragging.value = false
-    await save()
+    if (hasUnsavedChanges.value) await save()
   }
 
   const handleCopySuccess = () => showMessage(translate('_common.copied'), APP_CONSTANTS.MESSAGE_TYPES.SUCCESS)

@@ -2,14 +2,13 @@
   <div class="pin-page">
     <Navbar />
     <div id="content" class="container">
-      <PageHeader page="pairing" />
+      <PageHeader page="pairing">
+        <template #actions><button type="button" class="btn btn-outline-secondary" @click="qrPanelOpen = true"><i class="fas fa-qrcode me-2" aria-hidden="true"></i>{{ shellT.appsGuide.qr }}</button></template>
+      </PageHeader>
 
       <!-- QR Code Pairing -->
-      <div class="card mb-4 qr-pair-card">
+      <ConfirmDialog :show="qrPanelOpen" dialog-id="qr-pair-dialog" :title="$t('pin.qr_pairing')" :close-label="$t('_common.cancel')" :dismissible="!qrLoading" @close="closeQrPanel">
         <div class="card-body text-center">
-          <h5 class="card-title mb-3">
-            <i class="fas fa-qrcode me-2"></i>{{ $t('pin.qr_pairing') }}
-          </h5>
           <p class="text-muted mb-3">{{ $t('pin.qr_pairing_desc') }}</p>
           <div class="alert alert-danger d-flex align-items-start mb-3" style="font-size: 0.85rem;">
             <i class="fas fa-exclamation-triangle me-2 mt-1"></i>
@@ -64,11 +63,7 @@
             </button>
           </div>
         </div>
-      </div>
-
-      <div class="divider-text mb-4">
-        <span>{{ $t('pin.or_manual_pin') }}</span>
-      </div>
+      </ConfirmDialog>
 
       <form action="" class="form d-flex flex-column align-items-center" id="form">
         <div class="card flex-column d-flex p-4 mb-4">
@@ -102,8 +97,8 @@
         <div class="card-body">
           <div class="p-2">
             <div class="d-flex justify-content-end align-items-center mb-3">
-              <h2 id="unpair" class="text-center me-auto mb-0">{{ $t('troubleshooting.unpair_title') }}</h2>
-              <button class="btn btn-danger" :disabled="unpairAllPressed || loading" @click="handleUnpairAll">
+              <h2 id="unpair" class="paired-heading me-auto mb-0">{{ $t('troubleshooting.unpair_title') }}</h2>
+              <button class="btn btn-danger" :disabled="unpairAllPressed || loading || !clients.length" @click="handleUnpairAll">
                 <span v-if="unpairAllPressed" class="spinner-border spinner-border-sm me-2" role="status"></span>
                 {{ $t('troubleshooting.unpair_all') }}
               </button>
@@ -318,11 +313,11 @@
             </div>
           </div>
           <!-- 空状态 -->
-          <div v-else-if="!loading" class="list-group list-group-flush list-group-item-light">
-            <div class="list-group-item p-5 text-center">
+          <div v-else-if="!loading" class="empty-state" role="status">
+            <div class="text-center">
               <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
               <p class="mb-0">
-                <em>{{ $t('troubleshooting.unpair_single_no_devices') }}</em>
+                {{ $t('troubleshooting.unpair_single_no_devices') }}
               </p>
             </div>
           </div>
@@ -363,6 +358,8 @@
 
 <script setup>
 import PageHeader from '../components/common/PageHeader.vue'
+import ConfirmDialog from '../components/common/ConfirmDialog.vue'
+import { useI18n as useShellI18n } from '@/desktop/i18n/index.js'
 import { onMounted, ref, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Tooltip } from 'bootstrap'
@@ -371,6 +368,12 @@ import { formatHdrNits, usePin } from '../composables/usePin.js'
 import { useQrPair } from '../composables/useQrPair.js'
 
 const { t } = useI18n()
+const { t: shellT } = useShellI18n()
+const qrPanelOpen = ref(false)
+const closeQrPanel = () => {
+  qrPanelOpen.value = false
+  if (qrActive.value) cancelQrCode()
+}
 
 const {
   pairingDeviceName,
@@ -468,8 +471,9 @@ watch(clients, initTooltips, { deep: true })
 </style>
 
 <style scoped lang="less">
+.paired-heading { font-size:18px; font-weight:600; }
 .pin-page {
-  min-height: 100vh;
+  min-height: 100%;
   padding-bottom: var(--spacing-xl);
   color: var(--ui-text-primary);
   background: linear-gradient(180deg, rgba(var(--ui-accent-rgb), 0.06), transparent 28rem);
@@ -837,14 +841,9 @@ watch(clients, initTooltips, { deep: true })
 }
 
 /* QR Code Pairing Styles */
-.qr-pair-card {
-  max-width: 480px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
 .qr-image-wrapper {
   display: inline-block;
+  max-width:100%;
   padding: 12px;
   background: #fff;
   border-radius: 12px;
@@ -853,28 +852,10 @@ watch(clients, initTooltips, { deep: true })
 
 .qr-image {
   display: block;
-  width: 280px;
-  height: 280px;
+  width: min(280px, 100%);
+  height: auto;
+  aspect-ratio:1;
   border-radius: 4px;
 }
 
-.divider-text {
-  display: flex;
-  align-items: center;
-  text-align: center;
-  color: var(--ui-text-muted);
-  font-size: 0.875rem;
-
-  &::before,
-  &::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid var(--ui-border);
-  }
-
-  span {
-    padding: 0 1rem;
-  }
-
-}
 </style>
