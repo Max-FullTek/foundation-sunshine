@@ -46,11 +46,9 @@ extern "C" {
 #include "display_device/display_device.h"
 #include "display_device/session.h"
 #include "globals.h"
-#include "haptics/authored_ir.h"
 #include "rtsp.h"
 #include "input.h"
 #include "logging.h"
-#include "mic_mixer.h"
 #include "network.h"
 #include "streaming/perf_recorder.h"
 #include "stream.h"
@@ -180,7 +178,6 @@ namespace stream {
   enum class socket_e : int {
     video,  ///< Video
     audio,  ///< Audio
-    microphone,  ///< Microphone
   };
 
 #pragma pack(push, 1)
@@ -360,19 +357,6 @@ namespace stream {
     AUDIO_FEC_HEADER fecHeader;
   };
 
-  struct mic_packet_t {
-    RTP_PACKET rtp;
-  };
-
-  // 扩展的RTP包结构，支持16位包类型
-  struct rtp_packet_ext_t {
-    std::uint8_t header;
-    std::uint16_t packetType;  // 16位包类型
-    std::uint16_t sequenceNumber;
-    std::uint32_t timestamp;
-    std::uint32_t ssrc;
-  };
-
 #pragma pack(pop)
 
   constexpr std::size_t
@@ -524,56 +508,14 @@ namespace stream {
     std::thread video_thread;
     std::thread audio_thread;
     std::thread control_thread;
-    std::thread mic_thread;
 
     asio::io_context io_context;
-    asio::io_context mic_io_context;
 
     udp::socket video_sock { io_context };
     udp::socket audio_sock { io_context };
-    udp::socket mic_sock { mic_io_context };
 
     control_server_t control_server;
 
-    boost::mutex mic_socket_mutex;
-    boost::atomic<bool> mic_socket_enabled { false };
-
-    // 单个会话的麦克风加密上下文。
-    struct mic_cipher_ctx_t {
-      crypto::cipher::cbc_t cipher;
-
-      mic_cipher_ctx_t(const crypto::aes_t &key, bool padding):
-          cipher(key, padding) {}
-
-      mic_cipher_ctx_t(mic_cipher_ctx_t &&) noexcept = default;
-      mic_cipher_ctx_t &operator=(mic_cipher_ctx_t &&) noexcept = default;
-    };
-
-    struct mic_session_ctx_t {
-      std::uint32_t session_id;
-      std::uint32_t key_id;
-      boost::asio::ip::address client_address;
-      std::optional<udp::endpoint> source_endpoint;
-      std::optional<mic_cipher_ctx_t> cipher;
-
-      mic_session_ctx_t(
-        std::uint32_t session_id,
-        std::uint32_t key_id,
-        boost::asio::ip::address client_address,
-        std::optional<mic_cipher_ctx_t> cipher
-      ):
-          session_id {session_id},
-          key_id {key_id},
-          client_address {net::normalize_address(std::move(client_address))},
-          cipher {std::move(cipher)} {}
-    };
-
-    // 每个会话保留独立的加密与 Opus 解码状态，麦克风线程将所有活动源混合后
-    // 写入同一个虚拟麦克风设备。会话 ID 是主身份，IP 和 UDP endpoint 只用于路由。
-    std::unordered_map<std::uint32_t, boost::shared_ptr<mic_session_ctx_t>> mic_sessions;
-    boost::mutex mic_session_mutex;
-    boost::atomic<std::uint32_t> mic_session_count { 0 };
-    boost::atomic<bool> mic_playout_reset_pending { false };
   };
 
   struct session_t {
@@ -640,8 +582,6 @@ namespace stream {
       audio_fec_packet_t fec_packet;
       std::unique_ptr<platf::deinit_t> qos;
 
-      bool enable_mic;
-      bool mic_registered { false };
     } audio;
 
     struct {
@@ -669,15 +609,6 @@ namespace stream {
       std::uint64_t cursor_failed_revision = 0;
       std::uint32_t cursor_send_failures = 0;
 
-      std::unique_ptr<haptics::authored_ir_session_t> authored_haptics;
-      bool authored_haptics_init_failed = false;
-      // One fallback session per controller: smoothing, throttle and watchdog
-      // state must not bleed between pads, and the watchdog stop has to reach
-      // the pad that actually stopped sending PCM.
-      std::unordered_map<std::uint16_t, std::unique_ptr<haptics::legacy_rumble_session_t>> legacy_haptics;
-      bool legacy_haptics_init_failed = false;
-      std::unordered_map<std::uint16_t, std::pair<std::uint16_t, std::uint16_t>> compatibility_rumble;
-      std::unordered_map<std::uint16_t, std::pair<std::uint16_t, std::uint16_t>> synthesized_haptics_rumble;
     } control;
 
     std::uint32_t launch_session_id;
@@ -694,7 +625,6 @@ namespace stream {
 
     safe::mail_raw_t::event_t<bool> shutdown_event;
     safe::signal_t controlEnd;
-
 
     // 标识这是仅控制流会话（只作为输入设备，不传输视频/音频）
     bool control_only { false };
@@ -851,167 +781,6 @@ namespace stream {
     packet->seq = util::endian::little(seq);
 
     return std::string_view { (char *) tagged_cipher.data(), packet_length + sizeof(control_encrypted_t) - sizeof(control_encrypted_t::seq) };
-  }
-
-  bool
-  open_mic_socket_locked(broadcast_ctx_t &ctx) {
-    if (ctx.mic_sock.is_open()) {
-      ctx.mic_socket_enabled.store(true);
-      return true;
-    }
-
-    ctx.mic_socket_enabled.store(false);
-
-    auto address_family = net::af_from_enum_string(config::sunshine.address_family);
-    auto protocol = address_family == net::IPV4 ? udp::v4() : udp::v6();
-    auto mic_port = net::map_port(MIC_STREAM_PORT);
-    boost::system::error_code ec;
-
-    const auto bind_address = boost::asio::ip::make_address(net::get_bind_address(address_family), ec);
-    if (ec) {
-      BOOST_LOG(error) << "Invalid microphone bind address: "sv << ec.message();
-      return false;
-    }
-
-    ctx.mic_sock.open(protocol, ec);
-    if (ec) {
-      BOOST_LOG(error) << "Couldn't re-open Microphone socket: "sv << ec.message();
-      return false;
-    }
-
-    ctx.mic_sock.bind(udp::endpoint(bind_address, mic_port), ec);
-    if (ec) {
-      BOOST_LOG(error) << "Couldn't re-bind Microphone socket to port ["sv << mic_port << "]: "sv << ec.message();
-      boost::system::error_code close_ec;
-      ctx.mic_sock.close(close_ec);
-      return false;
-    }
-
-    ctx.mic_socket_enabled.store(true);
-    BOOST_LOG(info) << "Microphone socket opened on " << bind_address << ':' << mic_port;
-    return true;
-  }
-
-  void
-  close_mic_socket_locked(broadcast_ctx_t &ctx) {
-    ctx.mic_socket_enabled.store(false);
-
-    if (!ctx.mic_sock.is_open()) {
-      return;
-    }
-
-    boost::system::error_code ec;
-    ctx.mic_sock.close(ec);
-    if (ec && ec != boost::asio::error::bad_descriptor) {
-      BOOST_LOG(warning) << "Couldn't close Microphone socket: "sv << ec.message();
-    }
-  }
-
-  void
-  cancel_mic_receive_locked(broadcast_ctx_t &ctx) {
-    if (!ctx.mic_sock.is_open()) {
-      return;
-    }
-
-    boost::system::error_code ec;
-    ctx.mic_sock.cancel(ec);
-    if (ec && ec != boost::asio::error::bad_descriptor) {
-      BOOST_LOG(warning) << "Couldn't cancel Microphone receive: "sv << ec.message();
-    }
-  }
-
-  /**
-   * @brief Stop all microphone reception during broadcast shutdown.
-   * @param ctx The shared broadcast context.
-   * @return true if an open socket was closed.
-   */
-  bool
-  disable_mic_socket(broadcast_ctx_t &ctx) {
-    boost::lock_guard<boost::mutex> session_lock(ctx.mic_session_mutex);
-    ctx.mic_sessions.clear();
-    ctx.mic_session_count.store(0, boost::memory_order_release);
-
-    boost::lock_guard<boost::mutex> socket_lock(ctx.mic_socket_mutex);
-    const auto was_open = ctx.mic_sock.is_open();
-    close_mic_socket_locked(ctx);
-    return was_open;
-  }
-
-  /**
-   * @brief Release the microphone source registered by the ending session.
-   * @param ctx The shared broadcast context.
-   * @param session_id The ID of the ending session.
-   * @return true if a source registration was removed.
-   */
-  bool
-  release_mic_session(broadcast_ctx_t &ctx, std::uint32_t session_id) {
-    boost::lock_guard<boost::mutex> session_lock(ctx.mic_session_mutex);
-    if (ctx.mic_sessions.erase(session_id) == 0) {
-      return false;
-    }
-
-    const auto remaining_sessions = static_cast<std::uint32_t>(ctx.mic_sessions.size());
-    ctx.mic_session_count.store(remaining_sessions, boost::memory_order_release);
-    if (remaining_sessions == 0) {
-      // 记录会话计数经过零点的边沿。即使新会话在 cancel 回调执行前接入，
-      // 麦克风线程也必须从新的绝对播放截止时间开始。
-      ctx.mic_playout_reset_pending.store(true, boost::memory_order_release);
-    }
-    if (remaining_sessions != 0) {
-      return true;
-    }
-
-    boost::lock_guard<boost::mutex> socket_lock(ctx.mic_socket_mutex);
-    cancel_mic_receive_locked(ctx);
-    return true;
-  }
-
-  /**
-   * @brief Register an independently decoded microphone source.
-   * @param session The session that completed microphone SETUP.
-   * @param client_address The authenticated RTSP peer address.
-   */
-  void
-  setup_mic_for_session(session_t &session, const boost::asio::ip::address &client_address) {
-    auto &ctx = *session.broadcast_ref.get();
-
-    const auto should_enable_mic_encryption = (session.config.encryptionFlagsEnabled & SS_ENC_MIC) != 0;
-    std::optional<broadcast_ctx_t::mic_cipher_ctx_t> cipher;
-    if (should_enable_mic_encryption) {
-      cipher.emplace(
-        session.audio.cipher.key,
-        session.audio.cipher.padding
-      );
-    }
-
-    auto registration = boost::make_shared<broadcast_ctx_t::mic_session_ctx_t>(
-      session.launch_session_id,
-      session.audio.avRiKeyId,
-      client_address,
-      std::move(cipher)
-    );
-
-    {
-      // 统一会话表和套接字生命周期的加锁顺序，避免最后一个旧会话退出时
-      // 关闭刚为新会话打开的套接字。
-      boost::lock_guard<boost::mutex> session_lock(ctx.mic_session_mutex);
-      boost::lock_guard<boost::mutex> socket_lock(ctx.mic_socket_mutex);
-      if (!open_mic_socket_locked(ctx)) {
-        BOOST_LOG(error) << "Failed to open microphone socket for " << session.client_name;
-        return;
-      }
-
-      session.audio.mic_registered = true;
-      ctx.mic_sessions[session.launch_session_id] = registration;
-      ctx.mic_session_count.store(
-        static_cast<std::uint32_t>(ctx.mic_sessions.size()),
-        boost::memory_order_release);
-    }
-
-    BOOST_LOG(info) << "Client " << session.client_name << ": Microphone encryption "
-                    << (should_enable_mic_encryption ? "ENABLED" : "DISABLED")
-                    << " (session " << session.launch_session_id
-                    << " registered for multi-client mixing)";
   }
 
   int
@@ -1343,8 +1112,7 @@ namespace stream {
    * @return 0 on success.
    */
   int
-  send_feedback_msg(session_t *session, platf::gamepad_feedback_msg_t &msg,
-                    bool synthesized_haptics = false) {
+  send_feedback_msg(session_t *session, platf::gamepad_feedback_msg_t &msg) {
     if (!session->control.peer) {
       BOOST_LOG(warning) << "Couldn't send gamepad feedback data, still waiting for PING from Moonlight"sv;
       // Still waiting for PING from Moonlight
@@ -1359,21 +1127,12 @@ namespace stream {
       plaintext.header.payloadLength = sizeof(plaintext) - sizeof(control_header_v2);
 
       auto &data = msg.data.rumble;
-      auto &source = synthesized_haptics ?
-                       session->control.synthesized_haptics_rumble :
-                       session->control.compatibility_rumble;
-      source[msg.id] = {data.lowfreq, data.highfreq};
-      const auto compatibility = session->control.compatibility_rumble[msg.id];
-      const auto synthesized = session->control.synthesized_haptics_rumble[msg.id];
-      const auto lowfreq = std::max(compatibility.first, synthesized.first);
-      const auto highfreq = std::max(compatibility.second, synthesized.second);
-
       plaintext.useless = 0xC0FFEE;
       plaintext.id = util::endian::little(msg.id);
-      plaintext.lowfreq = util::endian::little(lowfreq);
-      plaintext.highfreq = util::endian::little(highfreq);
+      plaintext.lowfreq = util::endian::little(data.lowfreq);
+      plaintext.highfreq = util::endian::little(data.highfreq);
 
-      BOOST_LOG(verbose) << "Rumble: "sv << msg.id << " :: "sv << util::hex(lowfreq).to_string_view() << " :: "sv << util::hex(highfreq).to_string_view();
+      BOOST_LOG(verbose) << "Rumble: "sv << msg.id << " :: "sv << util::hex(data.lowfreq).to_string_view() << " :: "sv << util::hex(data.highfreq).to_string_view();
       std::array<std::uint8_t,
         sizeof(control_encrypted_t) + crypto::cipher::round_to_pkcs7_padded(sizeof(plaintext)) + crypto::cipher::tag_size>
         encrypted_payload;
@@ -1451,114 +1210,6 @@ namespace stream {
         encrypted_payload;
 
       payload = encode_control(session, util::view(plaintext), encrypted_payload);
-    }
-    else if (msg.type == platf::gamepad_feedback_e::ds5_haptics_pcm) {
-      const bool sends_raw_pcm = (session->config.mlFeatureFlags & ML_FF_DS5_HAPTICS_PCM) != 0;
-      const bool sends_authored_ir = (session->config.mlFeatureFlags & ML_FF_DS5_HAPTICS_IR_V2) != 0;
-
-      const auto &data = msg.data.ds5_haptics;
-      const auto pcm_size = static_cast<std::size_t>(data.frame_count) * 4;
-      auto write_u16 = [](std::uint8_t *p, std::uint16_t v) {
-        p[0] = static_cast<std::uint8_t>(v);
-        p[1] = static_cast<std::uint8_t>(v >> 8);
-      };
-      auto write_u32 = [](std::uint8_t *p, std::uint32_t v) {
-        p[0] = static_cast<std::uint8_t>(v);
-        p[1] = static_cast<std::uint8_t>(v >> 8);
-        p[2] = static_cast<std::uint8_t>(v >> 16);
-        p[3] = static_cast<std::uint8_t>(v >> 24);
-      };
-      auto write_u64 = [&write_u32](std::uint8_t *p, std::uint64_t v) {
-        write_u32(p, static_cast<std::uint32_t>(v));
-        write_u32(p + 4, static_cast<std::uint32_t>(v >> 32));
-      };
-      if (!sends_raw_pcm && !sends_authored_ir) {
-        if (!session->control.legacy_haptics_init_failed) {
-          auto [controller_session, inserted] = session->control.legacy_haptics.try_emplace(msg.id);
-          if (inserted) {
-            auto created = std::make_unique<haptics::legacy_rumble_session_t>();
-            if (!created->ready()) {
-              session->control.legacy_haptics.erase(controller_session);
-              session->control.legacy_haptics_init_failed = true;
-              BOOST_LOG(error) << "Unable to initialize legacy DualSense haptics fallback"sv;
-              return 0;
-            }
-            controller_session->second = std::move(created);
-          }
-          const auto rumble = controller_session->second->process(
-            msg.id, data.flags, data.frame_count, data.sequence, data.presentation_time_us,
-            std::span<const std::uint8_t> {data.pcm.data(), pcm_size});
-          if (rumble) {
-            auto legacy_msg = platf::gamepad_feedback_msg_t::make_rumble(
-              rumble->controller_id, rumble->low_frequency, rumble->high_frequency);
-            return send_feedback_msg(session, legacy_msg, true);
-          }
-        }
-        return 0;
-      }
-      // A malformed client that declares both modes gets the lossless physical
-      // route. Official clients reject this combination before connecting.
-      else if (sends_authored_ir && !sends_raw_pcm) {
-        if (!session->control.authored_haptics && !session->control.authored_haptics_init_failed) {
-          auto authored_haptics = std::make_unique<haptics::authored_ir_session_t>();
-          if (!authored_haptics->ready()) {
-            session->control.authored_haptics_init_failed = true;
-            BOOST_LOG(error) << "Unable to initialize authored DualSense haptics analysis"sv;
-          }
-          else {
-            session->control.authored_haptics = std::move(authored_haptics);
-          }
-        }
-        if (!session->control.authored_haptics) {
-          return 0;
-        }
-        const auto wire = session->control.authored_haptics->process(
-          msg.id, data.flags, data.frame_count, data.sequence, data.presentation_time_us,
-          std::span<const std::uint8_t> {data.pcm.data(), pcm_size});
-        if (!wire) {
-          return 0;
-        }
-
-        std::array<std::uint8_t, sizeof(control_header_v2) + haptics::authored_ir_v2_wire_size> plaintext {};
-        auto *control = plaintext.data();
-        write_u16(control, packetTypes[IDX_DS5_HAPTICS_IR_V2]);
-        write_u16(control + 2, haptics::authored_ir_v2_wire_size);
-        std::ranges::copy(*wire, control + sizeof(control_header_v2));
-
-        std::array<std::uint8_t,
-          sizeof(control_encrypted_t) + crypto::cipher::round_to_pkcs7_padded(plaintext.size()) + crypto::cipher::tag_size>
-          encrypted_payload;
-        payload = encode_control(session, util::view(plaintext), encrypted_payload);
-      }
-      else {
-        constexpr std::size_t wire_header_size = 28;
-        std::vector<std::uint8_t> plaintext(sizeof(control_header_v2) + wire_header_size + pcm_size);
-        auto *control = plaintext.data();
-        write_u16(control, packetTypes[IDX_DS5_HAPTICS_PCM]);
-        write_u16(control + 2, static_cast<std::uint16_t>(wire_header_size + pcm_size));
-        auto *wire = control + sizeof(control_header_v2);
-        wire[0] = 1;
-        wire[1] = data.flags;
-        write_u16(wire + 2, wire_header_size);
-        write_u16(wire + 4, msg.id);
-        write_u16(wire + 6, data.frame_count);
-        write_u32(wire + 8, data.sequence);
-        write_u64(wire + 12, data.presentation_time_us);
-        write_u32(wire + 20, 48000);
-        wire[24] = 2;
-        wire[25] = 16;
-        wire[26] = wire[27] = 0;
-        std::copy_n(data.pcm.begin(), pcm_size, wire + wire_header_size);
-
-        std::array<std::uint8_t,
-          sizeof(control_encrypted_t) + crypto::cipher::round_to_pkcs7_padded(
-            sizeof(control_header_v2) + wire_header_size + 240 * 4) + crypto::cipher::tag_size>
-          encrypted_payload;
-        payload = encode_control(session,
-                                 std::string_view(reinterpret_cast<const char *>(plaintext.data()), plaintext.size()),
-                                 encrypted_payload);
-      }
-      unreliable = true;
     }
     else {
       BOOST_LOG(error) << "Unknown gamepad feedback message type"sv;
@@ -2365,7 +2016,6 @@ namespace stream {
     auto broadcast_shutdown_event = mail::man->event<bool>(mail::broadcast_shutdown);
     while (!shutdown_event->peek() && !broadcast_shutdown_event->peek()) {
       bool has_session_awaiting_peer = false;
-      bool has_ds5_haptics_session = false;
 
       {
         auto lg = server->_sessions.lock();
@@ -2412,22 +2062,10 @@ namespace stream {
             has_session_awaiting_peer = true;
           }
           else {
-            // 音频触觉转普通振动也需要及时处理反馈，不能只按客户端 PCM/IR 能力判断。
-            has_ds5_haptics_session |=
-              input::has_ds5_audio_haptics(session->input);
             auto &feedback_queue = session->control.feedback_queue;
             while (feedback_queue->peek()) {
               auto feedback_msg = feedback_queue->pop();
-
               send_feedback_msg(session, *feedback_msg);
-            }
-
-            for (auto &[controller_id, controller_haptics] : session->control.legacy_haptics) {
-              if (const auto rumble = controller_haptics->poll(now)) {
-                auto legacy_msg = platf::gamepad_feedback_msg_t::make_rumble(
-                  controller_id, rumble->low_frequency, rumble->high_frequency);
-                send_feedback_msg(session, legacy_msg, true);
-              }
             }
 
             auto &hdr_queue = session->control.hdr_queue;
@@ -2555,8 +2193,7 @@ namespace stream {
       // permanently: every observation is preceded by that client's touch/mouse
       // packets, and enet_host_service returns per incoming event, so the drain
       // runs on traffic; the idle timeout bounds delivery on a quiet socket.
-      server->iterate(has_ds5_haptics_session ? 5ms :
-                      cursor_channel::local_mode_active() ? 16ms : 150ms);
+      server->iterate(cursor_channel::local_mode_active() ? 16ms : 150ms);
     }
 
     // Let all remaining connections know the server is shutting down
@@ -2617,611 +2254,6 @@ namespace stream {
              ec == boost::asio::error::message_size;
     }
   }  // namespace
-
-  void
-  micRecvThread(broadcast_ctx_t &ctx) {
-    auto broadcast_shutdown_event = mail::man->event<bool>(mail::broadcast_shutdown);
-    auto &mic_io = ctx.mic_io_context;
-
-    udp::endpoint peer;
-    std::array<char, 2048> mic_recv_buffer;
-    bool mic_device_initialized = false;
-    std::unique_ptr<platf::deinit_t> audio_thread_guard;
-    audio::audio_ctx_ref_t mic_audio_ref;
-    mic_mixer::mixer_t mixer;
-    std::unordered_set<mic_mixer::source_id_t> mixer_sources;
-
-    struct MicStats {
-      uint64_t total_packets = 0;
-      uint64_t accepted_packets = 0;
-      uint64_t decode_failed = 0;
-      uint64_t invalid_data = 0;
-      uint64_t unregistered = 0;
-      uint64_t route_ambiguous = 0;
-      uint64_t wasapi_backpressure_drops = 0;
-    };
-    MicStats stats;
-
-    auto log_mic_stats = [&](std::string_view reason) {
-      const auto mixer_stats = mixer.take_stats();
-      const auto has_diagnostics = stats.total_packets != 0 ||
-                                   stats.wasapi_backpressure_drops != 0 ||
-                                   mixer_stats.duplicate_packets != 0 ||
-                                   mixer_stats.late_packets != 0 ||
-                                   mixer_stats.buffer_overflow_packets != 0 ||
-                                   mixer_stats.timeline_reanchors != 0 ||
-                                   mixer_stats.plc_frames != 0 ||
-                                   mixer_stats.decode_failures != 0 ||
-                                   mixer_stats.skipped_playout_frames != 0;
-      if (!has_diagnostics) {
-        stats = {};
-        return;
-      }
-
-      BOOST_LOG(info) << "Microphone diagnostics ("sv << reason
-                      << "): packets="sv << stats.total_packets
-                      << ", accepted="sv << stats.accepted_packets
-                      << ", route_decode_failed="sv << stats.decode_failed
-                      << ", invalid="sv << stats.invalid_data
-                      << ", unregistered="sv << stats.unregistered
-                      << ", route_ambiguous="sv << stats.route_ambiguous
-                      << ", duplicate="sv << mixer_stats.duplicate_packets
-                      << ", late="sv << mixer_stats.late_packets
-                      << ", queue_overflow="sv << mixer_stats.buffer_overflow_packets
-                      << ", reanchors="sv << mixer_stats.timeline_reanchors
-                      << ", plc="sv << mixer_stats.plc_frames
-                      << ", opus_decode_failed="sv << mixer_stats.decode_failures
-                      << ", skipped_slots="sv << mixer_stats.skipped_playout_frames
-                      << ", wasapi_drops="sv << stats.wasapi_backpressure_drops;
-      stats = {};
-    };
-
-    auto release_mic_device = [&]() {
-      if (mic_device_initialized) {
-        audio::release_mic_redirect_device();
-        BOOST_LOG(debug) << "Microphone redirect session released"sv;
-      }
-      mic_device_initialized = false;
-      mic_audio_ref = {};
-      mixer.clear();
-      mixer_sources.clear();
-    };
-
-    auto decode_candidate_payload = [](const boost::shared_ptr<broadcast_ctx_t::mic_session_ctx_t> &mic_session,
-                                      const std::uint8_t *audio_data,
-                                      std::size_t data_size,
-                                      std::uint16_t sequence_number,
-                                      std::vector<std::uint8_t> &decoded_payload) -> bool {
-      decoded_payload.clear();
-      if (!mic_session->cipher) {
-        if (!mic_mixer::is_valid_opus_packet(audio_data, data_size)) {
-          return false;
-        }
-        decoded_payload.assign(audio_data, audio_data + data_size);
-        return true;
-      }
-
-      auto &cipher_ctx = *mic_session->cipher;
-      // 麦克风 CBC IV 的前 4 字节为会话 key ID 与 16 位包序号之和，其余字节为 0。
-      crypto::aes_t current_iv(16);
-      const auto iv_sequence = mic_session->key_id + sequence_number;
-      const auto iv_sequence_be = util::endian::big<std::uint32_t>(iv_sequence);
-      std::memcpy(current_iv.data(), &iv_sequence_be, sizeof(iv_sequence_be));
-      std::memset(current_iv.data() + sizeof(iv_sequence_be), 0, current_iv.size() - sizeof(iv_sequence_be));
-
-      const std::string_view ciphertext {
-        reinterpret_cast<const char *>(audio_data),
-        data_size,
-      };
-      return cipher_ctx.cipher.decrypt(ciphertext, decoded_payload, &current_iv) == 0 &&
-             mic_mixer::is_valid_opus_packet(decoded_payload.data(), decoded_payload.size());
-    };
-
-    auto process_audio_data = [&](const std::uint8_t *audio_data,
-                                  std::size_t data_size,
-                                  std::uint16_t sequence_number,
-                                  std::optional<std::uint32_t> timestamp_ms,
-                                  std::uint32_t source_key_id,
-                                  const udp::endpoint &source_endpoint) {
-      if (!ctx.mic_socket_enabled.load()) {
-        return;
-      }
-
-      ++stats.total_packets;
-
-      const auto source_address = net::normalize_address(source_endpoint.address());
-      std::vector<boost::shared_ptr<broadcast_ctx_t::mic_session_ctx_t>> candidates;
-      {
-        boost::lock_guard<boost::mutex> lock(ctx.mic_session_mutex);
-        for (const auto &[session_id, session] : ctx.mic_sessions) {
-          (void) session_id;
-          if (session->client_address == source_address) {
-            candidates.emplace_back(session);
-          }
-        }
-      }
-
-      if (candidates.empty()) {
-        ++stats.unregistered;
-        return;
-      }
-
-      std::sort(candidates.begin(), candidates.end(), [](const auto &left, const auto &right) {
-        return left->session_id < right->session_id;
-      });
-
-      // 现有客户端在线路上使用固定 SSRC，因此 endpoint 和密钥试解仍是兼容路径。
-      // 若后续客户端把会话 key ID 放入 SSRC，则可在首次数据包上直接定位会话。
-      std::vector<boost::shared_ptr<broadcast_ctx_t::mic_session_ctx_t>> ordered_candidates;
-      ordered_candidates.reserve(candidates.size());
-      auto append_candidates = [&](const auto &predicate) {
-        for (const auto &candidate : candidates) {
-          if (predicate(*candidate) &&
-              std::find(ordered_candidates.begin(), ordered_candidates.end(), candidate) == ordered_candidates.end()) {
-            ordered_candidates.emplace_back(candidate);
-          }
-        }
-      };
-
-      append_candidates([&](const auto &candidate) {
-        return candidate.source_endpoint == source_endpoint;
-      });
-      if (source_key_id != MIC_PACKET_MAGIC) {
-        append_candidates([&](const auto &candidate) {
-          return candidate.key_id == source_key_id;
-        });
-      }
-      if (candidates.size() == 1) {
-        append_candidates([](const auto &) {
-          return true;
-        });
-      }
-      append_candidates([](const auto &candidate) {
-        return !candidate.source_endpoint && candidate.cipher.has_value();
-      });
-      append_candidates([](const auto &candidate) {
-        return !candidate.source_endpoint;
-      });
-      // 加密载荷可以在源端口变化后重新通过密钥定位。明文载荷没有足够身份信息，
-      // 多会话下不能安全接管另一个 endpoint 的绑定。
-      append_candidates([](const auto &candidate) {
-        return candidate.cipher.has_value();
-      });
-
-      boost::shared_ptr<broadcast_ctx_t::mic_session_ctx_t> mic_session;
-      std::vector<std::uint8_t> decoded_payload;
-      for (const auto &candidate : ordered_candidates) {
-        if (decode_candidate_payload(candidate, audio_data, data_size, sequence_number, decoded_payload)) {
-          mic_session = candidate;
-          break;
-        }
-      }
-
-      if (!mic_session) {
-        if (ordered_candidates.empty()) {
-          ++stats.route_ambiguous;
-        }
-        else {
-          ++stats.decode_failed;
-        }
-        return;
-      }
-
-      if (!mic_device_initialized) {
-        return;
-      }
-
-      if (!mixer.add_source(mic_session->session_id)) {
-        ++stats.invalid_data;
-        return;
-      }
-      mixer_sources.insert(mic_session->session_id);
-      if (!mixer.push_packet(
-            mic_session->session_id,
-            decoded_payload.data(),
-            decoded_payload.size(),
-            sequence_number,
-            timestamp_ms)) {
-        ++stats.invalid_data;
-        return;
-      }
-
-      std::vector<std::uint32_t> displaced_sources;
-      {
-        boost::lock_guard<boost::mutex> lock(ctx.mic_session_mutex);
-        const auto registered = ctx.mic_sessions.find(mic_session->session_id);
-        if (registered == ctx.mic_sessions.end() || registered->second != mic_session) {
-          ++stats.unregistered;
-          return;
-        }
-
-        // 一个 UDP endpoint 在同一时刻只属于一个已验证音源。重新绑定时清理旧映射，
-        // 避免同 IP 多会话在首次试解阶段留下重复 endpoint。
-        for (auto &[session_id, registered_session] : ctx.mic_sessions) {
-          (void) session_id;
-          if (registered_session != mic_session && registered_session->source_endpoint == source_endpoint) {
-            registered_session->source_endpoint.reset();
-            displaced_sources.emplace_back(registered_session->session_id);
-          }
-        }
-        mic_session->source_endpoint = source_endpoint;
-      }
-
-      for (const auto displaced_source : displaced_sources) {
-        mixer.remove_source(displaced_source);
-        mixer_sources.erase(displaced_source);
-      }
-
-      ++stats.accepted_packets;
-    };
-
-    auto retry_delay = 300ms;  // 初始重试延迟，连续错误指数退避到最大5秒
-    boost::function<void(const boost::system::error_code, size_t)> mic_recv_func;
-    boost::function<void()> schedule_mix;
-    bool retry_receive_after_error = false;
-    bool reset_mic_io_cycle = false;
-    bool reopen_mic_socket_after_error = false;
-    bool mix_timer_armed = false;
-    std::uint64_t mix_timer_generation = 0;
-    using mix_clock_t = asio::steady_timer::clock_type;
-    std::optional<mix_clock_t::time_point> next_mix_deadline;
-    asio::steady_timer mix_timer {mic_io};
-    auto cancel_mix_timer = [&]() {
-      mix_timer_armed = false;
-      ++mix_timer_generation;
-      next_mix_deadline.reset();
-      try {
-        mix_timer.cancel();
-      }
-      catch (const std::exception &e) {
-        BOOST_LOG(error) << "Failed to cancel microphone mix timer: "sv << e.what();
-      }
-    };
-    auto reset_playout_clock_if_pending = [&]() {
-      if (ctx.mic_playout_reset_pending.load(boost::memory_order_acquire) &&
-          ctx.mic_playout_reset_pending.exchange(false, boost::memory_order_acq_rel)) {
-        cancel_mix_timer();
-      }
-    };
-    auto schedule_receive = [&]() -> bool {
-      boost::lock_guard<boost::mutex> lock(ctx.mic_socket_mutex);
-      if (broadcast_shutdown_event->peek() ||
-          !ctx.mic_socket_enabled.load() ||
-          !ctx.mic_sock.is_open() ||
-          !mic_device_initialized ||
-          ctx.mic_session_count.load(boost::memory_order_acquire) == 0) {
-        return false;
-      }
-
-      try {
-        ctx.mic_sock.async_receive_from(asio::buffer(mic_recv_buffer), peer, 0, mic_recv_func);
-        return true;
-      }
-      catch (const std::exception &e) {
-        BOOST_LOG(error) << "Failed to restart microphone receive: "sv << e.what();
-        return false;
-      }
-    };
-    auto retry_with_reopened_mic_socket = [&]() {
-      retry_receive_after_error = true;
-      mixer.clear();
-      mixer_sources.clear();
-      reopen_mic_socket_after_error = true;
-      cancel_mix_timer();
-    };
-
-    mic_recv_func = [&](const boost::system::error_code &ec, size_t received_bytes) {
-      if (!ctx.mic_socket_enabled.load()) {
-        return;
-      }
-
-      if (is_terminal_udp_receive_error(ec)) {
-        BOOST_LOG(debug) << "Microphone receive stopped: "sv << ec.message();
-        // 最后一个会话退出会取消挂起的接收。如果新会话在取消回调执行前完成注册，
-        // 需要在同一个 io_context 周期内恢复接收和混音，不能把新会话留在空转状态。
-        if (!broadcast_shutdown_event->peek() &&
-            ctx.mic_socket_enabled.load() &&
-            ctx.mic_session_count.load(boost::memory_order_acquire) != 0 &&
-            mic_device_initialized) {
-          if (schedule_receive()) {
-            schedule_mix();
-          }
-          else {
-            if (!broadcast_shutdown_event->peek() &&
-                ctx.mic_socket_enabled.load() &&
-                ctx.mic_session_count.load(boost::memory_order_acquire) != 0 &&
-                mic_device_initialized) {
-              retry_with_reopened_mic_socket();
-            }
-            else {
-              reset_mic_io_cycle = true;
-              cancel_mix_timer();
-            }
-          }
-        }
-        else {
-          // 没有活动会话时同时终止旧混音链，让 io_context 回到外层重新判断状态。
-          // cancel() 无法撤回已经排队的成功回调，因此还要用周期标记阻止旧回调自重挂。
-          reset_mic_io_cycle = true;
-          cancel_mix_timer();
-        }
-        return;
-      }
-
-      // 正常处理数据包或遇到可恢复错误后继续挂接接收。
-      auto fg = util::fail_guard([&]() {
-        if (schedule_receive()) {
-          // 新会话可能在旧混音回调因会话数为零退出后接入。
-          // 接收恢复时同时保证混音定时器仍在运行。
-          schedule_mix();
-        }
-      });
-
-      if (ec) {
-        if (is_recoverable_udp_receive_error(ec)) {
-          BOOST_LOG(debug) << "Mic socket recoverable receive error: "sv << ec.message();
-        }
-        else {
-          BOOST_LOG(error) << "Mic socket error: "sv << ec.message();
-          fg.disable();
-          // 未分类 socket 错误会进入退避重试。旧播放 slot 已失去实时性，
-          // 只清理 mixer 状态，不重建与网络错误无关的 WASAPI 设备。
-          retry_with_reopened_mic_socket();
-        }
-        return;
-      }
-
-      retry_receive_after_error = false;
-      retry_delay = 300ms;
-
-      if (received_bytes < sizeof(RTP_PACKET)) {
-        return;
-      }
-
-      // 尝试16位扩展包类型
-      if (received_bytes >= sizeof(rtp_packet_ext_t)) {
-        auto *header_ext = (rtp_packet_ext_t *) mic_recv_buffer.data();
-        if (header_ext->packetType == packetTypes[IDX_MIC_DATA]) {
-          size_t header_size = sizeof(rtp_packet_ext_t);
-          if (received_bytes > header_size) {
-            uint16_t sequence_number = util::endian::little(header_ext->sequenceNumber);
-            const auto source_key_id = util::endian::little(header_ext->ssrc);
-            process_audio_data(
-              reinterpret_cast<const uint8_t *>(mic_recv_buffer.data()) + header_size,
-              received_bytes - header_size,
-              sequence_number,
-              std::nullopt,
-              source_key_id,
-              peer);
-          }
-          return;
-        }
-      }
-
-      // 8位包类型
-      auto *header = (mic_packet_t *) mic_recv_buffer.data();
-      if (header->rtp.packetType == MIC_PACKET_TYPE_OPUS) {
-        size_t header_size = sizeof(mic_packet_t);
-        if (received_bytes > header_size) {
-          // 客户端按小端序发送序列号（MicrophoneStream.java 使用 LITTLE_ENDIAN）
-          // 服务端必须按小端序读取，否则会读错（比如 1 会读成 256）
-          uint16_t sequence_number = util::endian::little(header->rtp.sequenceNumber);
-          const auto timestamp_ms = util::endian::little(header->rtp.timestamp);
-          const auto source_key_id = util::endian::little(header->rtp.ssrc);
-          size_t data_size = received_bytes - header_size;
-          
-          // BOOST_LOG(verbose) << "Received MIC packet: total=" << received_bytes 
-          //                 << " bytes, header=" << header_size 
-          //                 << " bytes, data=" << data_size 
-          //                 << " bytes, sequenceNumber=" << sequence_number << " (little-endian)"
-          //                 << " from " << client_ip;
-          process_audio_data(
-            reinterpret_cast<const uint8_t *>(mic_recv_buffer.data()) + header_size,
-            data_size,
-            sequence_number,
-            timestamp_ms,
-            source_key_id,
-            peer);
-        }
-      }
-    };
-
-    schedule_mix = [&]() {
-      reset_playout_clock_if_pending();
-      if (ctx.mic_session_count.load(boost::memory_order_acquire) == 0) {
-        return;
-      }
-      if (mix_timer_armed) {
-        return;
-      }
-
-      mix_timer_armed = true;
-      const auto generation = ++mix_timer_generation;
-      if (!next_mix_deadline) {
-        next_mix_deadline = mix_clock_t::now() + 20ms;
-      }
-      mix_timer.expires_at(*next_mix_deadline);
-      mix_timer.async_wait([&, generation](const boost::system::error_code &ec) {
-        if (generation != mix_timer_generation) {
-          return;
-        }
-        reset_playout_clock_if_pending();
-        if (generation != mix_timer_generation) {
-          return;
-        }
-        mix_timer_armed = false;
-
-        if (ec == boost::asio::error::operation_aborted ||
-            broadcast_shutdown_event->peek() ||
-            retry_receive_after_error ||
-            reset_mic_io_cycle ||
-            ctx.mic_session_count.load(boost::memory_order_acquire) == 0) {
-          return;
-        }
-
-        const auto now = mix_clock_t::now();
-        if (now >= *next_mix_deadline + 20ms) {
-          const auto missed_frames = static_cast<std::size_t>((now - *next_mix_deadline) / 20ms);
-          mixer.skip_playout_frames(missed_frames);
-          *next_mix_deadline += 20ms * missed_frames;
-        }
-
-        std::unordered_set<mic_mixer::source_id_t> registered_sources;
-        {
-          boost::lock_guard<boost::mutex> lock(ctx.mic_session_mutex);
-          for (const auto &[session_id, session] : ctx.mic_sessions) {
-            (void) session;
-            registered_sources.insert(session_id);
-          }
-        }
-
-        for (auto source_it = mixer_sources.begin(); source_it != mixer_sources.end();) {
-          if (!registered_sources.contains(*source_it)) {
-            mixer.remove_source(*source_it);
-            source_it = mixer_sources.erase(source_it);
-          }
-          else {
-            ++source_it;
-          }
-        }
-
-        if (auto mixed = mixer.mix_next_frame()) {
-          const auto write_result = audio::write_mic_pcm(mixed->data(), mixed->size());
-          if (write_result == 0) {
-            ++stats.wasapi_backpressure_drops;
-          }
-          if (write_result < 0) {
-            if (write_result == -2) {
-              BOOST_LOG(info) << "Microphone output backend became unavailable; reinitializing"sv;
-            }
-            else {
-              BOOST_LOG(warning) << "Microphone output write failed; reinitializing"sv;
-            }
-            release_mic_device();
-            retry_receive_after_error = true;
-            reset_mic_io_cycle = true;
-            cancel_mix_timer();
-
-            boost::lock_guard<boost::mutex> lock(ctx.mic_socket_mutex);
-            cancel_mic_receive_locked(ctx);
-            return;
-          }
-        }
-
-        *next_mix_deadline += 20ms;
-        schedule_mix();
-      });
-    };
-
-    BOOST_LOG(debug) << "Starting microphone receive thread";
-
-    bool had_active_mic_sessions = false;
-
-    while (!broadcast_shutdown_event->peek()) {
-      if (ctx.mic_session_count.load(boost::memory_order_acquire) == 0) {
-        retry_delay = 300ms;  // 会话结束时重置延迟
-        reset_playout_clock_if_pending();
-        release_mic_device();
-        if (had_active_mic_sessions) {
-          log_mic_stats("sessions ended"sv);
-          had_active_mic_sessions = false;
-        }
-        (void) broadcast_shutdown_event->view(100ms);
-        continue;
-      }
-      had_active_mic_sessions = true;
-
-      if (reopen_mic_socket_after_error || !ctx.mic_socket_enabled.load()) {
-        bool has_active_sessions = false;
-        bool socket_ready = false;
-        {
-          // 复用注册/注销路径的锁序，在会话锁内重新确认 shutdown 尚未清空会话。
-          boost::lock_guard<boost::mutex> session_lock(ctx.mic_session_mutex);
-          has_active_sessions = !ctx.mic_sessions.empty();
-          if (has_active_sessions) {
-            boost::lock_guard<boost::mutex> socket_lock(ctx.mic_socket_mutex);
-            if (reopen_mic_socket_after_error) {
-              close_mic_socket_locked(ctx);
-            }
-            socket_ready = open_mic_socket_locked(ctx);
-          }
-        }
-        if (!has_active_sessions) {
-          continue;
-        }
-        if (!socket_ready) {
-          (void) broadcast_shutdown_event->view(retry_delay);
-          retry_delay = std::min(retry_delay * 2, 5000ms);
-          continue;
-        }
-        reopen_mic_socket_after_error = false;
-      }
-
-      // 在麦克风设备的完整生命周期内持有音频上下文，确保音频采集退出后仍能恢复设备。
-      if (!mic_device_initialized) {
-        if (!audio_thread_guard) {
-          audio_thread_guard = platf::init_audio_thread();
-          if (!audio_thread_guard) {
-            (void) broadcast_shutdown_event->view(retry_delay);
-            retry_delay = std::min(retry_delay * 2, 5000ms);
-            continue;
-          }
-        }
-
-        // 客户端麦克风可以在主机音频串流关闭时独立工作，因此活动的麦克风
-        // 会话需要能够创建并持有自己的音频控制上下文。
-        mic_audio_ref = audio::get_audio_ctx_ref();
-        if (!mic_audio_ref) {
-          (void) broadcast_shutdown_event->view(retry_delay);
-          retry_delay = std::min(retry_delay * 2, 5000ms);
-          continue;
-        }
-
-        if (audio::init_mic_redirect_device() != 0) {
-          mic_audio_ref = {};
-          (void) broadcast_shutdown_event->view(retry_delay);
-          retry_delay = std::min(retry_delay * 2, 5000ms);  // 指数退避，最大5秒
-          continue;
-        }
-
-        if (!ctx.mic_socket_enabled.load() ||
-            ctx.mic_session_count.load(boost::memory_order_acquire) == 0) {
-          audio::release_mic_redirect_device();
-          mic_audio_ref = {};
-          continue;
-        }
-
-        mic_device_initialized = true;
-        retry_delay = 300ms;
-      }
-
-      if (mic_io.stopped()) {
-        mic_io.restart();
-      }
-      retry_receive_after_error = false;
-      reset_mic_io_cycle = false;
-      if (!schedule_receive()) {
-        if (ctx.mic_socket_enabled.load() && !broadcast_shutdown_event->peek()) {
-          (void) broadcast_shutdown_event->view(100ms);
-        }
-        continue;
-      }
-      schedule_mix();
-
-      mic_io.run();
-      if (retry_receive_after_error &&
-          ctx.mic_socket_enabled.load() &&
-          !broadcast_shutdown_event->peek()) {
-        (void) broadcast_shutdown_event->view(retry_delay);
-        retry_delay = std::min(retry_delay * 2, 5000ms);
-      }
-    }
-
-    release_mic_device();
-    log_mic_stats("shutdown"sv);
-
-    BOOST_LOG(debug) << "Microphone receive thread ended";
-  }
 
   void
   recvThread(broadcast_ctx_t &ctx) {
@@ -3952,7 +2984,6 @@ namespace stream {
     ctx.control_thread = std::thread { controlBroadcastThread, &ctx.control_server };
 
     ctx.recv_thread = std::thread { recvThread, std::ref(ctx) };
-    ctx.mic_thread = std::thread { micRecvThread, std::ref(ctx) };
 
     return 0;
   }
@@ -3972,14 +3003,9 @@ namespace stream {
 
     ctx.message_queue_queue->stop();
     ctx.io_context.stop();
-    ctx.mic_io_context.stop();
 
     ctx.video_sock.close();
     ctx.audio_sock.close();
-
-    if (disable_mic_socket(ctx)) {
-      BOOST_LOG(debug) << "Microphone socket closed and encryption context securely cleared";
-    }
 
     video_packets.reset();
     audio_packets.reset();
@@ -3992,8 +3018,6 @@ namespace stream {
     ctx.audio_thread.join();
     BOOST_LOG(debug) << "Waiting for main control thread to end..."sv;
     ctx.control_thread.join();
-    BOOST_LOG(debug) << "Waiting for microphone thread to end..."sv;
-    ctx.mic_thread.join();
     BOOST_LOG(debug) << "All broadcasting threads ended"sv;
 
     broadcast_shutdown_event->reset();
@@ -4251,13 +3275,6 @@ namespace stream {
         // 非仅控制流会话：减少两个计数器
         --running_sessions;
 
-        if (session.audio.mic_registered) {
-          const auto was_registered = release_mic_session(*session.broadcast_ref.get(), session.launch_session_id);
-          session.audio.mic_registered = false;
-          BOOST_LOG(debug) << "Microphone registration for session " << session.launch_session_id
-                           << (was_registered ? " released"sv : " was already absent"sv);
-        }
-
         const auto stop_reason = session.lifecycle.snapshot().stop_reason;
 
         // If this is the last non-control-only session, invoke the platform callbacks
@@ -4411,11 +3428,6 @@ namespace stream {
 
       // 在生命周期仍为 STARTING 时完成麦克风注册。session::stop() 会等待该边界，
       // 避免 join() 在套接字引用和路由信息配对前释放会话。
-      if (!session.control_only) {
-        if (session.audio.enable_mic) {
-          setup_mic_for_session(session, addr);
-        }
-      }
 
       ++running_sessions;
       video_session_registration_guard.disable();
@@ -4579,8 +3591,6 @@ namespace stream {
       session->audio.sequenceNumber = 0;
       session->audio.timestamp = 0;
 
-      session->audio.enable_mic = launch_session.enable_mic;
-
       session->control_only = launch_session.control_only;
 
       session->control.peer = nullptr;
@@ -4717,7 +3727,6 @@ namespace stream {
           // Get audio and other settings
           info.host_audio = session_p->config.audio.flags[audio::config_t::HOST_AUDIO];
           info.enable_hdr = session_p->config.monitor.dynamicRange > 0;
-          info.enable_mic = session_p->audio.enable_mic;
           info.use_vdd = session_p->use_vdd;
           info.hdr_brightness_reported = session_p->reported_hdr_capabilities.reported;
           info.hdr_brightness_source = hdr::to_string(session_p->hdr_target_source);

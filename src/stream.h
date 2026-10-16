@@ -31,7 +31,6 @@ namespace stream {
   constexpr auto VIDEO_STREAM_PORT = 9;
   constexpr auto CONTROL_PORT = 10;
   constexpr auto AUDIO_STREAM_PORT = 11;
-  constexpr auto MIC_STREAM_PORT = 12;  // Port for microphone streaming
 
   /**
    * @brief Convert a steady-clock presentation time to the 90 kHz RTP video clock.
@@ -153,7 +152,6 @@ namespace stream {
     int bitrate;  // Current bitrate in Kbps
     bool host_audio;
     bool enable_hdr;
-    bool enable_mic;
     bool use_vdd;
     bool hdr_brightness_reported;
     std::string hdr_brightness_source;

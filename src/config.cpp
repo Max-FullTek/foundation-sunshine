@@ -515,9 +515,7 @@ namespace config {
     {},  // audio_sink
     {},  // virtual_sink
     false,  // keep_sink_default
-    "vb_cable"s,  // microphone_redirect_backend
     true,  // stream audio
-    true,  // stream_mic (enable microphone streaming from client)
     true,  // install_steam_drivers
   };
 
@@ -542,8 +540,6 @@ namespace config {
     platf::get_host_name(),  // sunshine_name,
     "[]",
     "sunshine_state.json"s,  // file_state
-    false,  // usb_forwarding_enabled: explicit host opt-in
-    0,  // usb_forwarding_port: automatic (main port + 7)
     {},  // external_ip
     {
       "1280x720"s,
@@ -1449,15 +1445,6 @@ namespace config {
     string_f(vars, "clients", nvhttp.clients);
     path_f(vars, "log_path", config::sunshine.log_file);
     path_f(vars, "file_state", nvhttp.file_state);
-    bool_f(vars, "usb_forwarding_enabled", nvhttp.usb_forwarding_enabled);
-    int usb_forwarding_port = nvhttp.usb_forwarding_port;
-    int_f(vars, "usb_forwarding_port", usb_forwarding_port);
-    if (usb_forwarding_port == 0 || (usb_forwarding_port >= 1024 && usb_forwarding_port <= 65535)) {
-      nvhttp.usb_forwarding_port = static_cast<std::uint16_t>(usb_forwarding_port);
-    } else {
-      BOOST_LOG(warning) << "Ignoring invalid usb_forwarding_port: expected 0 or 1024-65535";
-    }
-
     // Must be run after "file_state"
     config::sunshine.credentials_file = config::nvhttp.file_state;
     path_f(vars, "credentials_file", config::sunshine.credentials_file);
@@ -1488,14 +1475,7 @@ namespace config {
     string_f(vars, "audio_sink", audio.sink);
     string_f(vars, "virtual_sink", audio.virtual_sink);
     bool_f(vars, "keep_sink_default", audio.keep_sink_default);
-    string_restricted_f(
-      vars,
-      "microphone_redirect_backend",
-      audio.microphone_redirect_backend,
-      { "vb_cable"sv, "usbip_experimental"sv, "auto"sv, "disabled"sv }
-    );
     bool_f(vars, "stream_audio", audio.stream);
-    bool_f(vars, "stream_mic", audio.stream_mic);
     bool_f(vars, "install_steam_audio_drivers", audio.install_steam_drivers);
 
     string_restricted_f(vars, "origin_web_ui_allowed", nvhttp.origin_web_ui_allowed, { "pc"sv, "lan"sv, "wan"sv });

@@ -342,92 +342,6 @@ if (NOT BUILD_TESTS)
     return()
 endif ()
 
-set(REMOTE_USB_SOCKET_LIBRARIES)
-if (WIN32)
-    list(APPEND REMOTE_USB_SOCKET_LIBRARIES mswsock ws2_32)
-endif ()
-
-add_executable(loopback_usbip_bridge_unit_tests
-        ${CMAKE_SOURCE_DIR}/src/remote_usb/loopback_usbip_bridge.cpp
-        ${CMAKE_SOURCE_DIR}/tests/unit/test_loopback_usbip_bridge.cpp)
-target_include_directories(loopback_usbip_bridge_unit_tests PRIVATE
-        "${CMAKE_SOURCE_DIR}")
-target_link_libraries(loopback_usbip_bridge_unit_tests
-        PRIVATE Boost::asio
-        Boost::system
-        OpenSSL::Crypto
-        ${CMAKE_THREAD_LIBS_INIT}
-        ${REMOTE_USB_SOCKET_LIBRARIES}
-        gtest_main
-        sunshine_project_options sunshine_coverage sunshine_crypto)
-target_compile_options(loopback_usbip_bridge_unit_tests PRIVATE
-        $<$<COMPILE_LANGUAGE:CXX>:${SUNSHINE_COMPILE_OPTIONS}>)
-set_target_properties(loopback_usbip_bridge_unit_tests PROPERTIES
-        CXX_STANDARD 23
-        CXX_STANDARD_REQUIRED ON)
-add_test(NAME loopback_usbip_bridge_unit_tests COMMAND loopback_usbip_bridge_unit_tests)
-
-add_executable(virtual_touchscreen_unit_tests
-        ${CMAKE_SOURCE_DIR}/src/remote_usb/virtual_touchscreen_device.cpp
-        ${CMAKE_SOURCE_DIR}/tests/unit/test_virtual_touchscreen_device.cpp)
-target_include_directories(virtual_touchscreen_unit_tests PRIVATE
-        "${CMAKE_SOURCE_DIR}")
-target_link_libraries(virtual_touchscreen_unit_tests
-        PRIVATE Boost::system
-        ${CMAKE_THREAD_LIBS_INIT}
-        gtest_main
-        sunshine_project_options sunshine_coverage)
-target_compile_options(virtual_touchscreen_unit_tests PRIVATE
-        $<$<COMPILE_LANGUAGE:CXX>:${SUNSHINE_COMPILE_OPTIONS}>)
-set_target_properties(virtual_touchscreen_unit_tests PROPERTIES
-        CXX_STANDARD 23
-        CXX_STANDARD_REQUIRED ON)
-add_test(NAME virtual_touchscreen_unit_tests COMMAND virtual_touchscreen_unit_tests)
-
-add_executable(remote_usb_process_tree_helper
-        ${CMAKE_SOURCE_DIR}/tests/tools/remote_usb_process_tree_helper.cpp)
-target_link_libraries(remote_usb_process_tree_helper PRIVATE
-        Boost::process Boost::system ${CMAKE_THREAD_LIBS_INIT}
-        sunshine_project_options sunshine_coverage)
-set_target_properties(remote_usb_process_tree_helper PROPERTIES
-        CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
-
-add_executable(remote_usb_host_controller_unit_tests
-        ${CMAKE_SOURCE_DIR}/src/remote_usb/remote_usb_host_controller.cpp
-        ${CMAKE_SOURCE_DIR}/tests/unit/test_remote_usb_host_controller.cpp)
-target_include_directories(remote_usb_host_controller_unit_tests PRIVATE
-        "${CMAKE_SOURCE_DIR}")
-target_link_libraries(remote_usb_host_controller_unit_tests
-        PRIVATE Boost::asio
-        Boost::process
-        Boost::system
-        ${CMAKE_THREAD_LIBS_INIT}
-        ${REMOTE_USB_SOCKET_LIBRARIES}
-        gtest_main
-        sunshine_project_options sunshine_coverage)
-target_compile_options(remote_usb_host_controller_unit_tests PRIVATE
-        $<$<COMPILE_LANGUAGE:CXX>:${SUNSHINE_COMPILE_OPTIONS}>)
-target_compile_definitions(remote_usb_host_controller_unit_tests PRIVATE
-        REMOTE_USB_PROCESS_TREE_HELPER="$<TARGET_FILE:remote_usb_process_tree_helper>")
-add_dependencies(remote_usb_host_controller_unit_tests remote_usb_process_tree_helper)
-set_target_properties(remote_usb_host_controller_unit_tests PROPERTIES
-        CXX_STANDARD 23
-        CXX_STANDARD_REQUIRED ON)
-add_test(NAME remote_usb_host_controller_unit_tests COMMAND remote_usb_host_controller_unit_tests)
-
-# Drives the production TLS service for tests/tools/test_reverse_tunnel.py and
-# paired Moonlight probe runs, including real usbip-win2 device imports.
-add_executable(reverse_tunnel_probe
-        ${CMAKE_SOURCE_DIR}/tests/tools/reverse_tunnel_probe.cpp
-        ${CMAKE_SOURCE_DIR}/src/remote_usb/reverse_tunnel_service.cpp
-        ${CMAKE_SOURCE_DIR}/src/remote_usb/remote_usb_host_controller.cpp)
-target_include_directories(reverse_tunnel_probe PRIVATE "${CMAKE_SOURCE_DIR}")
-target_link_libraries(reverse_tunnel_probe PRIVATE
-        Boost::asio Boost::process Boost::system Boost::log
-        OpenSSL::SSL OpenSSL::Crypto nlohmann_json::nlohmann_json
-        ${CMAKE_THREAD_LIBS_INIT} ${REMOTE_USB_SOCKET_LIBRARIES}
-        sunshine_project_options sunshine_coverage)
-set_target_properties(reverse_tunnel_probe PROPERTIES CXX_STANDARD 23 CXX_STANDARD_REQUIRED ON)
 find_package(Python3 QUIET COMPONENTS Interpreter)
 if (Python3_Interpreter_FOUND AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang"
         AND NOT CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
@@ -444,15 +358,6 @@ if(Python3_Interpreter_FOUND)
                 --compiler "${CMAKE_CXX_COMPILER}")
     set_tests_properties(cmake_configuration_tests PROPERTIES TIMEOUT 180)
 endif()
-find_program(REVERSE_TUNNEL_OPENSSL_EXECUTABLE openssl)
-if (Python3_Interpreter_FOUND AND REVERSE_TUNNEL_OPENSSL_EXECUTABLE)
-    add_test(NAME reverse_tunnel_transport_tests
-            COMMAND "${Python3_EXECUTABLE}"
-            "${CMAKE_SOURCE_DIR}/tests/tools/test_reverse_tunnel.py"
-            "$<TARGET_FILE:reverse_tunnel_probe>"
-            --openssl "${REVERSE_TUNNEL_OPENSSL_EXECUTABLE}")
-    set_tests_properties(reverse_tunnel_transport_tests PROPERTIES TIMEOUT 60)
-endif ()
 
 # modify SUNSHINE_DEFINITIONS
 if (WIN32)
@@ -615,70 +520,6 @@ foreach(dep ${SUNSHINE_TARGET_DEPENDENCIES})
 endforeach()
 
 if (WIN32)
-    add_executable(ds5_fake_sidecar
-            ${CMAKE_SOURCE_DIR}/tests/tools/ds5_fake_sidecar.cpp)
-    target_link_libraries(ds5_fake_sidecar PRIVATE
-            sunshine_project_options sunshine_coverage)
-    set_target_properties(ds5_fake_sidecar PROPERTIES
-            CXX_STANDARD 23
-            LINK_SEARCH_START_STATIC 1)
-    add_dependencies(${PROJECT_NAME} ds5_fake_sidecar)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-            SUNSHINE_DS5_FAKE_SIDECAR_PATH="$<TARGET_FILE:ds5_fake_sidecar>"
-            SUNSHINE_DS5_SIDECAR_TEST_HOOK)
-
-    add_executable(ds5_sidecar_client_unit_tests
-            ${CMAKE_SOURCE_DIR}/tests/unit/platform/windows/test_ds5_sidecar_client.cpp
-            ${CMAKE_SOURCE_DIR}/tests/unit/platform/windows/test_ds5_component_manifest.cpp
-            ${CMAKE_SOURCE_DIR}/tests/tools/ds5_sidecar_test_stubs.cpp
-            ${CMAKE_SOURCE_DIR}/src/ds5/config.cpp
-            ${CMAKE_SOURCE_DIR}/src/platform/windows/ds5/ds5_sidecar_client.cpp)
-    target_link_libraries(ds5_sidecar_client_unit_tests PRIVATE sunshine::host_headers
-            sunshine_project_options sunshine_coverage)
-    target_include_directories(ds5_sidecar_client_unit_tests PRIVATE "${CMAKE_SOURCE_DIR}")
-    target_link_libraries(ds5_sidecar_client_unit_tests
-            PRIVATE Boost::log
-            Boost::format
-            Boost::property_tree
-            nlohmann_json::nlohmann_json
-            gtest_main)
-    target_compile_definitions(ds5_sidecar_client_unit_tests PRIVATE
-            SUNSHINE_DS5_FAKE_SIDECAR_PATH="$<TARGET_FILE:ds5_fake_sidecar>"
-            SUNSHINE_DS5_SIDECAR_TEST_HOOK)
-    target_compile_options(ds5_sidecar_client_unit_tests PRIVATE
-            $<$<COMPILE_LANGUAGE:CXX>:${SUNSHINE_COMPILE_OPTIONS}>)
-    set_target_properties(ds5_sidecar_client_unit_tests PROPERTIES
-            CXX_STANDARD 23
-            LINK_SEARCH_START_STATIC 1)
-    add_dependencies(ds5_sidecar_client_unit_tests ds5_fake_sidecar)
-    add_test(NAME ds5_sidecar_client_unit_tests COMMAND ds5_sidecar_client_unit_tests)
-
-    add_executable(microphone_client_unit_tests
-            ${CMAKE_SOURCE_DIR}/tests/unit/platform/windows/test_microphone_client.cpp
-            ${CMAKE_SOURCE_DIR}/tests/tools/ds5_sidecar_test_stubs.cpp
-            ${CMAKE_SOURCE_DIR}/src/ds5/config.cpp
-            ${CMAKE_SOURCE_DIR}/src/platform/windows/ds5/ds5_sidecar_client.cpp
-            ${CMAKE_SOURCE_DIR}/src/platform/windows/virtual_device_host/microphone_client.cpp)
-    target_link_libraries(microphone_client_unit_tests PRIVATE sunshine::host_headers
-            sunshine_project_options sunshine_coverage)
-    target_include_directories(microphone_client_unit_tests PRIVATE "${CMAKE_SOURCE_DIR}")
-    target_link_libraries(microphone_client_unit_tests
-            PRIVATE Boost::log
-            Boost::format
-            Boost::property_tree
-            nlohmann_json::nlohmann_json
-            gtest_main)
-    target_compile_definitions(microphone_client_unit_tests PRIVATE
-            SUNSHINE_DS5_FAKE_SIDECAR_PATH="$<TARGET_FILE:ds5_fake_sidecar>"
-            SUNSHINE_DS5_SIDECAR_TEST_HOOK)
-    target_compile_options(microphone_client_unit_tests PRIVATE
-            $<$<COMPILE_LANGUAGE:CXX>:${SUNSHINE_COMPILE_OPTIONS}>)
-    set_target_properties(microphone_client_unit_tests PROPERTIES
-            CXX_STANDARD 23
-            LINK_SEARCH_START_STATIC 1)
-    add_dependencies(microphone_client_unit_tests ds5_fake_sidecar)
-    add_test(NAME microphone_client_unit_tests COMMAND microphone_client_unit_tests)
-
     # prefer static libraries since we're linking statically
     # this fixes libcurl linking errors when using non MSYS2 version of CMake
     set_target_properties(${PROJECT_NAME} PROPERTIES LINK_SEARCH_START_STATIC 1)

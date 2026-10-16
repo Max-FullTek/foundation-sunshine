@@ -137,9 +137,7 @@ namespace config {
     std::string sink;
     std::string virtual_sink;
     bool keep_sink_default;  // Keep the selected Windows audio output device as the system default while streaming
-    std::string microphone_redirect_backend;
     bool stream;
-    bool stream_mic;
     bool install_steam_drivers;
   };
 
@@ -179,8 +177,6 @@ namespace config {
     std::string clients;
 
     std::string file_state;
-    bool usb_forwarding_enabled;
-    std::uint16_t usb_forwarding_port;  // 0: main port + 7; otherwise explicit override
 
     std::string external_ip;
     std::vector<std::string> resolutions;

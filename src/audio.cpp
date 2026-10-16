@@ -732,48 +732,4 @@ namespace audio {
     stream.mapping = params.mapping;
   }
 
-  int init_mic_redirect_device() {
-    // 单步原子获取：仅当音频上下文已存在时使用，绝不重新触发 start_audio_control。
-    auto ref = try_get_audio_ctx_ref();
-    if (!ref) {
-      BOOST_LOG(debug) << "Audio context not active, skipping microphone device initialization";
-      return -1;
-    }
-    if (!ref->control) {
-      BOOST_LOG(error) << "Audio context not available for microphone data writing";
-      return -1;
-    }
-    return ref->control->init_mic_redirect_device();
-  }
-
-  void release_mic_redirect_device() {
-    // 单步原子获取：仅当音频上下文已存在时释放设备，避免在已停止后再创建上下文。
-    auto ref = try_get_audio_ctx_ref();
-    if (!ref) {
-      BOOST_LOG(debug) << "Audio context not active, skipping microphone device release";
-      return;
-    }
-    if (!ref->control) {
-      BOOST_LOG(warning) << "Audio context not available for microphone device release";
-      return;
-    }
-    ref->control->release_mic_redirect_device();
-  }
-
-  int write_mic_pcm(const std::int16_t *samples, std::size_t frame_count) {
-    // 单步原子获取：避免对已经释放的音频上下文做 check-then-act。
-    auto ref = try_get_audio_ctx_ref();
-    if (!ref) {
-      BOOST_LOG(debug) << "Audio context not active, skipping microphone data write";
-      // 注意：这不是错误，而是正常情况
-      // 可能音频捕获还没有启动，或者已经停止
-      return -1;
-    }
-    if (!ref->control) {
-      BOOST_LOG(warning) << "Audio context reference invalid for microphone data writing";
-      return -1;
-    }
-
-    return ref->control->write_mic_pcm(samples, frame_count);
-  }
 }  // namespace audio

@@ -47,7 +47,7 @@ namespace nvhttp::sessions {
     session_obj["fps"] = session_info.fps;
     session_obj["host_audio"] = session_info.host_audio;
     session_obj["enable_hdr"] = session_info.enable_hdr;
-    session_obj["enable_mic"] = session_info.enable_mic;
+    session_obj["enable_mic"] = false;
     session_obj["app_name"] = session_info.app_name;
     session_obj["app_id"] = session_info.app_id;
     return session_obj;

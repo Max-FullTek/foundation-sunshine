@@ -94,7 +94,6 @@ namespace confighttp::configuration {
         outputTree.add_child("active_nvenc_frame_budget", budget_node);
       }
       // Configuration capability only; never expose the paired-client tunnel token here.
-      outputTree.put("usb_forwarding_config_version", "1");
       outputTree.put("pair_name", nvhttp::get_pair_name());
     }
 
@@ -262,7 +261,6 @@ namespace confighttp::configuration {
         // 将 inputTree 转换为 std::map（保证有序）
         std::map<std::string, std::string> fullConfig;
         for (const auto &kv : inputTree) {
-          if (kv.first == "usb_forwarding_config_version") continue;
           std::string value = inputTree.get<std::string>(kv.first);
           fullConfig[kv.first] = value;
         }

@@ -53,7 +53,6 @@ export default defineConfig({
     rolldownOptions: {
       input: {
         apps: resolve(assetsSrcPath, 'apps.html'),
-        downloads: resolve(assetsSrcPath, 'downloads.html'),
         config: resolve(assetsSrcPath, 'config.html'),
         index: resolve(assetsSrcPath, 'index.html'),
         password: resolve(assetsSrcPath, 'password.html'),

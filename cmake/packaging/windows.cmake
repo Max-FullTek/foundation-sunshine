@@ -31,7 +31,6 @@ if (TARGET sunshine_dlssnr_adapter)
           COMPONENT application)
 endif ()
 
-
 # Hardening: include zlib1.dll (loaded via LoadLibrary() in openssl's libcrypto.a)
 install(FILES "${ZLIB}" DESTINATION "." COMPONENT application)
 
@@ -42,22 +41,6 @@ install(TARGETS audio-info RUNTIME DESTINATION "tools" COMPONENT audio)
 # Mandatory tools
 install(TARGETS sunshinesvc RUNTIME DESTINATION "tools" COMPONENT application)
 install(TARGETS qiin-tabtip RUNTIME DESTINATION "tools" COMPONENT application)
-
-# The optional self-contained runtime is a separate release asset. The main
-# package carries only its pinned download manifest, keeping the feature
-# installable without adding the complete .NET runtime to every Sunshine copy.
-set(DS5_SIDECAR_PACKAGE_MANIFEST "${CMAKE_BINARY_DIR}/ds5-sidecar-package.json" CACHE FILEPATH
-    "Path to the pinned Sunshine DualSense sidecar package manifest")
-if(EXISTS "${DS5_SIDECAR_PACKAGE_MANIFEST}")
-  install(FILES "${DS5_SIDECAR_PACKAGE_MANIFEST}"
-          DESTINATION "tools"
-          RENAME "ds5-sidecar-package.json"
-          COMPONENT application)
-  set(SUNSHINE_DS5_SIDECAR_PACKAGE_AVAILABLE ON)
-else()
-  message(STATUS "DualSense sidecar package manifest was not generated; optional component install will be unavailable")
-  set(SUNSHINE_DS5_SIDECAR_PACKAGE_AVAILABLE OFF)
-endif()
 
 # Shared tool: nefconw.exe (used by VDD and vmouse install scripts)
 install(FILES "${NEFCON_DRIVER_DIR}/nefconw.exe"
@@ -207,8 +190,6 @@ set(CPACK_COMPONENT_VDD_DISPLAY_NAME "Zako Display Driver")
 set(CPACK_COMPONENT_VDD_DESCRIPTION "支持HDR的虚拟显示器驱动安装")
 set(CPACK_COMPONENT_VDD_GROUP "Core")
 
-
-
 # service auto-start script
 set(CPACK_COMPONENT_AUTOSTART_DISPLAY_NAME "Launch on Startup")
 set(CPACK_COMPONENT_AUTOSTART_DESCRIPTION "If enabled, launches Sunshine automatically on system startup.")
@@ -252,11 +233,7 @@ set(CPACK_COMPONENT_GAMEPAD_DESCRIPTION "Scripts to install and uninstall Virtua
 set(CPACK_COMPONENT_GAMEPAD_GROUP "Scripts")
 
 # include specific packaging
-if(SUNSHINE_DS5_SIDECAR_PACKAGE_AVAILABLE)
-  include(${CMAKE_MODULE_PATH}/packaging/windows_innosetup.cmake)
-else()
-  message(STATUS "Inno Setup targets are disabled because the DualSense sidecar package manifest is missing")
-endif()
+include(${CMAKE_MODULE_PATH}/packaging/windows_innosetup.cmake)
 # Legacy NSIS/WiX (kept for reference, no longer used)
 # include(${CMAKE_MODULE_PATH}/packaging/windows_nsis.cmake)
 # include(${CMAKE_MODULE_PATH}/packaging/windows_wix.cmake)

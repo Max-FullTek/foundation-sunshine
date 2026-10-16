@@ -13,7 +13,6 @@ set(SUNSHINE_HOST_SOURCES
     third-party/tray/src/tray.h
 
     # src/haptics
-    src/haptics/authored_ir.cpp src/haptics/authored_ir.h
 
     # src/hdr
     src/hdr/client_display_capabilities.cpp src/hdr/client_display_capabilities.h
@@ -63,7 +62,6 @@ set(SUNSHINE_HOST_SOURCES
     src/input.cpp src/input.h
     src/input_activity.cpp src/input_activity.h
     src/audio.cpp src/audio.h
-    src/mic_mixer.cpp src/mic_mixer.h
     src/process.cpp src/process.h
     src/network.cpp src/network.h
     src/stat_trackers.cpp src/stat_trackers.h
@@ -78,10 +76,6 @@ set(SUNSHINE_HOST_SOURCES
     src/thread_safe.h
     src/sync.h
     src/round_robin.h
-
-    # src/ds5
-    src/ds5/config.cpp src/ds5/config.h
-    src/ds5/config_api.cpp src/ds5/config_api.h
 
     # src/image_enhancement
     src/image_enhancement/config.cpp src/image_enhancement/config.h
@@ -100,14 +94,6 @@ set(SUNSHINE_HOST_SOURCES
     src/pyrowave/runtime.cpp src/pyrowave/runtime.h
     src/pyrowave/encoder.h
     src/pyrowave/pyrowave.h
-
-
-    # src/remote_usb
-    src/remote_usb/loopback_usbip_bridge.cpp src/remote_usb/loopback_usbip_bridge.h
-    src/remote_usb/reverse_tunnel_service.cpp src/remote_usb/reverse_tunnel_service.h
-    src/remote_usb/remote_usb_host_controller.cpp src/remote_usb/remote_usb_host_controller.h
-    src/remote_usb/usbip_endpoint.h
-
 
     # src/webhook
     src/webhook/webhook_auth.cpp src/webhook/webhook_auth.h

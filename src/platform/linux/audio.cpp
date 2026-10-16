@@ -540,24 +540,8 @@ namespace platf {
         return 0;
       }
 
-      int
-      write_mic_pcm(const std::int16_t *samples, std::size_t frame_count) override {
-        // Microphone redirect to the host is not implemented on Linux yet.
-        (void) samples;
-        (void) frame_count;
-        return -1;
-      }
 
-      int
-      init_mic_redirect_device() override {
-        // No host-side virtual mic on Linux.
-        return -1;
-      }
 
-      void
-      release_mic_redirect_device() override {
-        // Nothing to release.
-      }
 
       ~server_t() override {
         unload_null(index.stereo);

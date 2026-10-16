@@ -45,11 +45,9 @@ if(WIN32)
         set(_local_gui_timestamp "")
         foreach(_candidate_gui_dir IN LISTS _candidate_gui_dirs)
             set(_candidate_gui_exe "${_candidate_gui_dir}/sunshine-gui.exe")
-            set(_candidate_stylus_plugin "${_candidate_gui_dir}/alkaidlab-plugin-stylus.dll")
-            if(EXISTS "${_candidate_gui_exe}" AND EXISTS "${_candidate_stylus_plugin}")
+            if(EXISTS "${_candidate_gui_exe}")
                 file(SIZE "${_candidate_gui_exe}" _candidate_gui_size)
-                file(SIZE "${_candidate_stylus_plugin}" _candidate_stylus_plugin_size)
-                if(_candidate_gui_size GREATER 0 AND _candidate_stylus_plugin_size GREATER 0)
+                if(_candidate_gui_size GREATER 0)
                     file(TIMESTAMP "${_candidate_gui_exe}" _candidate_gui_timestamp "%Y%m%d%H%M%S" UTC)
                     if(NOT _local_gui_dir OR _candidate_gui_timestamp STRGREATER _local_gui_timestamp)
                         set(_local_gui_dir "${_candidate_gui_dir}")
@@ -68,12 +66,8 @@ if(WIN32)
         include(${CMAKE_MODULE_PATH}/packaging/FetchGUI.cmake)
     endif()
 
-    if(EXISTS "${GUI_DIR}/sunshine-gui.exe" AND
-       EXISTS "${GUI_DIR}/alkaidlab-plugin-stylus.dll")
+    if(EXISTS "${GUI_DIR}/sunshine-gui.exe")
         install(PROGRAMS "${GUI_DIR}/sunshine-gui.exe"
-            DESTINATION "${SUNSHINE_ASSETS_DIR}/gui"
-            COMPONENT gui)
-        install(FILES "${GUI_DIR}/alkaidlab-plugin-stylus.dll"
             DESTINATION "${SUNSHINE_ASSETS_DIR}/gui"
             COMPONENT gui)
         install(FILES "${GUI_DIR}/paired-build.json"

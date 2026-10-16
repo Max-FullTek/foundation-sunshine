@@ -65,7 +65,6 @@
 #include "platform/common.h"
 #include "platform/run_command.h"
 #include "process.h"
-#include "remote_usb/reverse_tunnel_service.h"
 #include "rtsp.h"
 #include "stream.h"
 #include "tray/system_tray.h"
@@ -264,7 +263,7 @@ namespace nvhttp {
     launch_session->env["SUNSHINE_CLIENT_GCMAP"] = std::to_string(launch_session->gcmap);
     launch_session->env["SUNSHINE_CLIENT_HOST_AUDIO"] = launch_session->host_audio ? "true" : "false";
     launch_session->env["SUNSHINE_CLIENT_ENABLE_SOPS"] = launch_session->enable_sops ? "true" : "false";
-    launch_session->env["SUNSHINE_CLIENT_ENABLE_MIC"] = launch_session->enable_mic ? "true" : "false";
+    launch_session->env["SUNSHINE_CLIENT_ENABLE_MIC"] = "false";
     launch_session->env["SUNSHINE_CLIENT_USE_VDD"] = launch_session->use_vdd ? "true" : "false";
     launch_session->env["SUNSHINE_CLIENT_CUSTOM_SCREEN_MODE"] = std::to_string(launch_session->custom_screen_mode);
     int channelCount = launch_session->surround_info & (65535);
@@ -968,43 +967,6 @@ namespace nvhttp {
 
     // USB forwarding requires explicit host opt-in. Credentials are generated
     // per service lifetime and delivered only over the paired HTTPS connection.
-    remote_usb::reverse_tunnel_service reverse_tunnel_service;
-    std::string usb_forwarding_token;
-    bool usb_forwarding_available = false;
-    if (config::nvhttp.usb_forwarding_enabled) {
-      const auto token_bytes = crypto::rand(32);
-      if (token_bytes.size() == 32) {
-        usb_forwarding_token = util::hex_vec(token_bytes);
-        remote_usb::reverse_tunnel_config tunnel_config;
-        tunnel_config.bind_address = bind_address.empty() ? "0.0.0.0" : bind_address;
-        // Resolve after the main port has been parsed. Its validated range
-        // reserves +21 for RTSP, so +7 cannot overflow a uint16_t.
-        tunnel_config.port = config::nvhttp.usb_forwarding_port != 0
-          ? config::nvhttp.usb_forwarding_port : net::map_port(7);
-        tunnel_config.session_token = usb_forwarding_token;
-        tunnel_config.certificate_file = config::nvhttp.cert;
-        tunnel_config.private_key_file = config::nvhttp.pkey;
-        tunnel_config.verify_client_cert = [](X509 *cert) {
-          return pairing::verify_client_certificate(cert, false) == nullptr;
-        };
-        // Optional USB forwarding must never claim a core TCP listener first.
-        const auto tunnel_port = tunnel_config.port;
-        const bool reserved_port = tunnel_port == port_http || tunnel_port == port_https ||
-          tunnel_port == net::map_port(confighttp::PORT_HTTPS) ||
-          tunnel_port == net::map_port(rtsp_stream::RTSP_SETUP_PORT);
-        if (!reserved_port) {
-          usb_forwarding_available = reverse_tunnel_service.start(std::move(tunnel_config));
-        }
-        else {
-          BOOST_LOG(warning) << "Remote USB forwarding port conflicts with a core TCP listener";
-        }
-      }
-      if (!usb_forwarding_available) {
-        usb_forwarding_token.clear();
-        BOOST_LOG(warning) << "Remote USB forwarding unavailable";
-      }
-    }
-
     network_probe::service_t network_probe_service;
     https_server_t https_server { config::nvhttp.cert, config::nvhttp.pkey };
     http_server_t http_server;
@@ -1066,32 +1028,6 @@ namespace nvhttp {
     https_server.resource["^/serverinfo$"]["GET"] = serverinfo<SunshineHTTPS>;
     https_server.resource["^/pair$"]["GET"] = pairing::pair_https;
     https_server.resource["^/applist$"]["GET"] = apps::list;
-    https_server.resource["^/api/v1/usb-forwarding$"]["GET"] =
-      [&](resp_https_t resp, req_https_t req) {
-        const web::CaseInsensitiveMultimap headers {
-          { "Content-Type", "application/json" },
-          { "Cache-Control", "no-store" },
-        };
-        // Do not trust the caller-supplied uniqueid, or relaxed TLS verification.
-        // Keep-alive identity is cached at handshake; pairing may since be revoked.
-        if (!is_client_paired(get_client_cert_uuid_from_request(req))) {
-          resp->write(web::StatusCode::unauthorized,
-            "{\"error\":\"pairing_required\"}", headers);
-          return;
-        }
-        nlohmann::json body {
-          { "version", 1 },
-          { "enabled", config::nvhttp.usb_forwarding_enabled },
-          { "available", usb_forwarding_available },
-          { "reason", !config::nvhttp.usb_forwarding_enabled ? "disabled" :
-                        usb_forwarding_available ? "ready" : "unavailable" },
-        };
-        if (usb_forwarding_available) {
-          body["port"] = reverse_tunnel_service.bound_port();
-          body["token"] = usb_forwarding_token;
-        }
-        resp->write(web::StatusCode::ok, body.dump(), headers);
-      };
     https_server.resource["^/appasset$"]["GET"] = apps::asset;
     https_server.resource["^/displays$"]["GET"] = display_control::get_displays;
     https_server.resource["^/display-scale-options$"]["GET"] = display_scale::get_options;
@@ -1197,7 +1133,6 @@ namespace nvhttp {
     ssl.join();
     tcp.join();
 
-    reverse_tunnel_service.stop();
   }
 
 }  // namespace nvhttp

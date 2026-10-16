@@ -73,7 +73,6 @@ namespace rtsp_stream {
     bool continuous_audio;
     bool enable_hdr;
     bool enable_sops;
-    bool enable_mic { false };
     bool use_vdd;
     int custom_screen_mode;
 
@@ -117,7 +116,6 @@ namespace rtsp_stream {
     bool setup_video { false };
     bool setup_audio { false };
     bool setup_control { false };
-    bool setup_mic { false };
     bool control_only { false };
 
     // GameStream 的 RTSP 请求可能分别使用独立 TCP 连接，

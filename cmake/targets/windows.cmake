@@ -18,10 +18,6 @@ if(NPM AND CARGO AND POWERSHELL_EXECUTABLE)
           COMMENT "Building Sunshine Control Panel (Tauri GUI)"
           COMMAND ${CMAKE_COMMAND} -E echo "Installing npm dependencies..."
           COMMAND ${NPM} install
-          COMMAND ${CMAKE_COMMAND} -E echo "Building native tool plugins..."
-          COMMAND ${POWERSHELL_EXECUTABLE} -NoProfile -ExecutionPolicy Bypass
-                  -File "${SUNSHINE_SOURCE_ASSETS_DIR}/common/sunshine-control-panel/scripts/build-native-plugins.ps1"
-                  -Configuration Release
           COMMAND ${CMAKE_COMMAND} -E echo "Building frontend with Vite..."
           COMMAND ${NPM} run build:renderer
           COMMAND ${CMAKE_COMMAND} -E echo "Building Tauri backend with Cargo..."

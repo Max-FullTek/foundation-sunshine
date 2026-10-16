@@ -94,24 +94,8 @@ namespace platf {
       return true;
     }
 
-    int
-    write_mic_pcm(const std::int16_t *samples, std::size_t frame_count) override {
-      // Microphone redirect to the host is not implemented on macOS yet.
-      (void) samples;
-      (void) frame_count;
-      return -1;
-    }
 
-    int
-    init_mic_redirect_device() override {
-      // No host-side virtual mic on macOS.
-      return -1;
-    }
 
-    void
-    release_mic_redirect_device() override {
-      // Nothing to release.
-    }
   };
 
   std::unique_ptr<audio_control_t>

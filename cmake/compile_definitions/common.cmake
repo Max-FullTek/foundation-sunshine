@@ -98,7 +98,7 @@ target_include_directories(sunshine_build_dependencies SYSTEM INTERFACE
         ${MINIUPNP_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 target_link_libraries(sunshine_build_dependencies INTERFACE
         ${SUNSHINE_EXTERNAL_LIBRARIES}
-        ${MINIUPNP_LIBRARIES} Threads::Threads enet moonlight::haptics
+        ${MINIUPNP_LIBRARIES} Threads::Threads enet
         nlohmann_json::nlohmann_json opus sunshine::ffmpeg ${Boost_LIBRARIES}
         sunshine::tls sunshine::curl ${PLATFORM_LIBRARIES})
 if(WIN32)

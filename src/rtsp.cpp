@@ -1208,7 +1208,7 @@ namespace rtsp_stream {
     }
 
     // Always request new control stream encryption if the client supports it
-    uint32_t encryption_flags_supported = SS_ENC_CONTROL_V2 | SS_ENC_AUDIO | SS_ENC_MIC;
+    uint32_t encryption_flags_supported = SS_ENC_CONTROL_V2 | SS_ENC_AUDIO;
     uint32_t encryption_flags_requested = SS_ENC_CONTROL_V2;
 
     // Determine the encryption desired for this remote endpoint
@@ -1220,11 +1220,11 @@ namespace rtsp_stream {
       // If it's mandatory, also request it to enable use if the client
       // didn't explicitly opt in, but it otherwise has support.
       if (encryption_mode == config::ENCRYPTION_MODE_MANDATORY) {
-        encryption_flags_requested |= SS_ENC_VIDEO | SS_ENC_AUDIO | SS_ENC_MIC;
+        encryption_flags_requested |= SS_ENC_VIDEO | SS_ENC_AUDIO;
       } else {
         // Even if not mandatory, request audio and mic encryption if encryption is enabled
         // This ensures clients that check encryptionRequested will enable audio and MIC encryption
-        encryption_flags_requested |= SS_ENC_AUDIO | SS_ENC_MIC;
+        encryption_flags_requested |= SS_ENC_AUDIO;
       }
     }
 
@@ -1289,13 +1289,7 @@ namespace rtsp_stream {
     }
 
     // 添加麦克风流支持（仅在启用时）
-    if (config::audio.stream_mic) {
-      ss << "m=audio " << net::map_port(stream::MIC_STREAM_PORT) << " RTP/AVP 96" << std::endl;
-      ss << "a=rtpmap:96 opus/48000/2" << std::endl;
-      ss << "a=fmtp:96 minptime=20;useinbandfec=1" << std::endl;
-      ss << "a=ptime:20" << std::endl;
-      ss << "a=maxptime:20" << std::endl;
-    }
+
 
     for (int x = 0; x < audio::MAX_STREAM_CONFIG; ++x) {
       auto &stream_config = audio::stream_configs[x];
@@ -1373,19 +1367,7 @@ namespace rtsp_stream {
       session.setup_control = true;
       port = net::map_port(stream::CONTROL_PORT);
     }
-    else if (type == "mic"sv) {
-      port = net::map_port(stream::MIC_STREAM_PORT);
-      if (config::audio.stream_mic) {
-        session.enable_mic = true;
-        session.setup_mic = true;
-      }
-      else {
-        // 兼容未检查 SDP 仍请求麦克风的客户端，但不授权接收麦克风数据。
-        session.enable_mic = false;
-        session.setup_mic = false;
-        BOOST_LOG(info) << "Ignoring microphone SETUP while microphone streaming is disabled"sv;
-      }
-    }
+
     else {
       cmd_not_found(sock, session, std::move(req));
 

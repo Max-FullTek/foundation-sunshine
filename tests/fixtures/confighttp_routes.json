@@ -12,10 +12,6 @@
     "method": "GET"
   },
   {
-    "pattern": "^/downloads/?$",
-    "method": "GET"
-  },
-  {
     "pattern": "^/config/?$",
     "method": "GET"
   },
@@ -116,16 +112,6 @@
     "method": "POST"
   },
   {
-    "pattern": "^/api/dualsense/config$",
-    "method": "GET",
-    "windows": true
-  },
-  {
-    "pattern": "^/api/dualsense/config$",
-    "method": "POST",
-    "windows": true
-  },
-  {
     "pattern": "^/api/configLocale$",
     "method": "GET"
   },
@@ -152,14 +138,6 @@
   {
     "pattern": "^/api/reset-display-device-persistence$",
     "method": "POST"
-  },
-  {
-    "pattern": "^/api/microphone/test$",
-    "method": "POST"
-  },
-  {
-    "pattern": "^/api/microphone/status$",
-    "method": "GET"
   },
   {
     "pattern": "^/api/vdd/status$",

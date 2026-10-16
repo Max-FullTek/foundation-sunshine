@@ -75,10 +75,6 @@ namespace confighttp::assets {
       getHtmlPage(response, request, "apps.html");
     }
 
-    void
-    getDownloadsPage(resp_https_t response, req_https_t request) {
-      getHtmlPage(response, request, "downloads.html");
-    }
 
     void
     getConfigPage(resp_https_t response, req_https_t request) {
@@ -266,7 +262,6 @@ namespace confighttp::assets {
     server.resource["^/$"]["GET"] = getIndexPage;
     server.resource["^/pin/?$"]["GET"] = getPinPage;
     server.resource["^/apps/?$"]["GET"] = getAppsPage;
-    server.resource["^/downloads/?$"]["GET"] = getDownloadsPage;
     server.resource["^/config/?$"]["GET"] = getConfigPage;
     server.resource["^/password/?$"]["GET"] = getPasswordPage;
     server.resource["^/welcome/?$"]["GET"] = getWelcomePage;

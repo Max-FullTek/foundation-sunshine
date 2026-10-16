@@ -58,7 +58,7 @@ if ($archiveHash -ne $manifest.sha256) {
     throw 'GUI bundle checksum mismatch'
 }
 Expand-Archive -LiteralPath $archive -DestinationPath $Destination
-foreach ($name in @('sunshine-gui.exe', 'alkaidlab-plugin-stylus.dll')) {
+foreach ($name in @('sunshine-gui.exe')) {
     $file = Get-Item -LiteralPath (Join-Path $Destination $name)
     if ($file.Length -eq 0) { throw "Empty required GUI file: $name" }
 }

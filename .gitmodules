@@ -77,10 +77,6 @@
 	path = src_assets/common/sunshine-control-panel
 	url = https://github.com/Max-FullTek/sunshine-control-panel.git
 	branch = main
-[submodule "third-party/moonlight-audio-haptics"]
-	path = third-party/moonlight-audio-haptics
-	url = https://github.com/AlkaidLab/moonlight-audio-haptics.git
-	branch = main
 [submodule "third-party/pyrowave"]
 	path = third-party/pyrowave
 	url = https://github.com/AlkaidLab/pyrowave.git

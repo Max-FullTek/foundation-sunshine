@@ -70,7 +70,6 @@ namespace upnp {
       auto video = std::to_string(net::map_port(stream::VIDEO_STREAM_PORT));
       auto audio = std::to_string(net::map_port(stream::AUDIO_STREAM_PORT));
       auto control = std::to_string(net::map_port(stream::CONTROL_PORT));
-      auto mic_stream = std::to_string(net::map_port(stream::MIC_STREAM_PORT));
       auto gs_http = std::to_string(net::map_port(nvhttp::PORT_HTTP));
       auto gs_https = std::to_string(net::map_port(nvhttp::PORT_HTTPS));
       auto wm_http = std::to_string(net::map_port(confighttp::PORT_HTTPS));
@@ -80,7 +79,6 @@ namespace upnp {
         { { video, video, "UDP"s }, "Sunshine - Video"s },
         { { audio, audio, "UDP"s }, "Sunshine - Audio"s },
         { { control, control, "UDP"s }, "Sunshine - Control"s },
-        { { mic_stream, mic_stream, "UDP"s }, "Sunshine - Microphone"s },
         { { gs_http, gs_http, "TCP"s }, "Sunshine - Client HTTP"s },
         { { gs_https, gs_https, "TCP"s }, "Sunshine - Client HTTPS"s },
       });

@@ -152,17 +152,6 @@ jobs:
           echo "  GCC: $(gcc --version | head -1)"
           echo "  Cargo: $(cargo --version)"
 
-      - name: Setup .NET for DualSense sidecar
-        uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Build self-contained DualSense sidecar
-        shell: pwsh
-        env:
-          RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.release-tag }}
-        run: .\scripts\build-ds5-sidecar.ps1 -ReleaseTag $env:RELEASE_TAG
-
       - name: Verify HDR build source
         id: hdr_source
         if: github.repository == 'AlkaidLab/foundation-sunshine'
@@ -247,8 +236,6 @@ jobs:
             test -f "$ADAPTER"
             mkdir -p hash-bound-files
             mv "$ADAPTER" hash-bound-files/foundation_rtx_video_adapter.dll
-            mkdir -p unsigned-files/Sunshine/tools/sunshine-ds5-signing-staging
-            cp -a build/ds5-sidecar-runtime/. unsigned-files/Sunshine/tools/sunshine-ds5-signing-staging/
             echo "Extracted files for signing:"
             ls -laR unsigned-files/
           else
@@ -308,25 +295,6 @@ jobs:
           Copy-Item -LiteralPath 'hash-bound-files/foundation_rtx_video_adapter.dll' `
             -Destination $destination -Force
 
-      - name: Package signed DualSense component
-        shell: pwsh
-        env:
-          RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.release-tag }}
-        run: |
-          .\scripts\package-ds5-sidecar.ps1 `
-            -RuntimeDirectory 'signed-files/Sunshine/tools/sunshine-ds5-signing-staging' `
-            -PackageDirectory 'signed-component' `
-            -ManifestPath 'build/ds5-sidecar-package.json' `
-            -ReleaseTag $env:RELEASE_TAG
-          Copy-Item -LiteralPath 'build/ds5-sidecar-package.json' `
-            -Destination 'signed-files/Sunshine/tools/ds5-sidecar-package.json' -Force
-          Copy-Item -LiteralPath 'build/ds5-sidecar-package.json' `
-            -Destination 'build/inno_staging/tools/ds5-sidecar-package.json' -Force
-          Copy-Item -LiteralPath 'build/ds5-sidecar-package.json' `
-            -Destination 'signed-component/Sunshine.Ds5Sidecar.manifest.json' -Force
-          Remove-Item -LiteralPath 'signed-files/Sunshine/tools/sunshine-ds5-signing-staging' `
-            -Recurse -Force
-
       # 使用签名后的文件重新打包 ZIP 便携版
       - name: Repackage signed Portable ZIP
         shell: bash
@@ -365,10 +333,6 @@ jobs:
           SIGNED_SRC="signed-files/Sunshine"
           
           echo "Replacing with signed files..."
-          if [ ! -f "$SIGNED_SRC/assets/gui/alkaidlab-plugin-stylus.dll" ]; then
-            echo "Error: signed alkaidlab-plugin-stylus.dll is missing"
-            exit 1
-          fi
           cp -fv "$SIGNED_SRC/sunshine.exe"                 "$STAGING_DIR/sunshine.exe"
           cp -fv "$SIGNED_SRC/zlib1.dll"                    "$STAGING_DIR/zlib1.dll"
           cp -fv "$SIGNED_SRC/tools/sunshinesvc.exe"        "$STAGING_DIR/tools/sunshinesvc.exe"
@@ -381,16 +345,12 @@ jobs:
           cp -fv "$SIGNED_SRC/tools/audio-info.exe"         "$STAGING_DIR/tools/audio-info.exe"
           cp -fv "$SIGNED_SRC/tools/dxgi-info.exe"          "$STAGING_DIR/tools/dxgi-info.exe"
           cp -fv "$SIGNED_SRC/assets/gui/sunshine-gui.exe"  "$STAGING_DIR/assets/gui/sunshine-gui.exe"
-          cp -fv "$SIGNED_SRC/assets/gui/alkaidlab-plugin-stylus.dll" "$STAGING_DIR/assets/gui/alkaidlab-plugin-stylus.dll"
           cp -fv "$SIGNED_SRC/tools/hdr_enhanced/nvidia_rtx_video/foundation_rtx_video_adapter.dll" \
             "$STAGING_DIR/tools/hdr_enhanced/nvidia_rtx_video/foundation_rtx_video_adapter.dll"
 
           # 运行 Inno Setup 编译器重新打包
           echo "Running ISCC to repackage installer..."
-          test -f "$STAGING_DIR/tools/ds5-sidecar-package.json"
-          test ! -e "$STAGING_DIR/tools/sunshine-ds5-sidecar/Sunshine.Ds5Sidecar.exe"
           "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" "build/sunshine_installer.iss" | tee build/inno-signed-build.log
-          grep -F "ds5-sidecar-package.json" build/inno-signed-build.log
           grep -F "foundation_rtx_video_adapter.dll" build/inno-signed-build.log
 
           # 使用与 Portable ZIP 一致的版本号
@@ -450,8 +410,6 @@ jobs:
           path: |
             Sunshine-*-Portable-x64-Signed.zip
             final-signed/*.exe
-            signed-component/Sunshine.Ds5Sidecar.x64.zip
-            signed-component/Sunshine.Ds5Sidecar.manifest.json
           if-no-files-found: error
 
       - name: Validate release tag target
@@ -487,8 +445,6 @@ jobs:
           files: |
             Sunshine-*-Portable-x64-Signed.zip
             final-signed/*.exe
-            signed-component/Sunshine.Ds5Sidecar.x64.zip
-            signed-component/Sunshine.Ds5Sidecar.manifest.json
           draft: true
           prerelease: true
           allowUpdates: true

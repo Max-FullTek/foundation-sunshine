@@ -409,7 +409,6 @@ namespace nvhttp::stream_start {
       recovery_session.frame_pipeline_policy = launch_session.frame_pipeline_policy;
       recovery_session.frame_pipeline_policy_resolved = launch_session.frame_pipeline_policy_resolved;
       recovery_session.enable_sops = launch_session.enable_sops;
-      recovery_session.enable_mic = launch_session.enable_mic;
       recovery_session.use_vdd = true;
       recovery_session.custom_screen_mode = launch_session.custom_screen_mode;
       recovery_session.hdr_capabilities = launch_session.hdr_capabilities;
@@ -420,7 +419,6 @@ namespace nvhttp::stream_start {
       recovery_session.setup_video = launch_session.setup_video;
       recovery_session.setup_audio = launch_session.setup_audio;
       recovery_session.setup_control = launch_session.setup_control;
-      recovery_session.setup_mic = launch_session.setup_mic;
       recovery_session.control_only = launch_session.control_only;
       recovery_session.env["SUNSHINE_CLIENT_USE_VDD"] = "true";
     }

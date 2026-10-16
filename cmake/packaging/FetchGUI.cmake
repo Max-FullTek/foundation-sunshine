@@ -46,14 +46,12 @@ if(EXISTS "${_gui_stamp}")
   endif()
 endif()
 if(EXISTS "${GUI_DIR}/sunshine-gui.exe" AND
-   EXISTS "${GUI_DIR}/alkaidlab-plugin-stylus.dll" AND
    EXISTS "${_gui_stamp}" AND
    "${_cached_gui_repo}" STREQUAL "${GUI_REPO}" AND
    "${_cached_gui_asset}" STREQUAL "${GUI_ASSET_NAME}" AND
    "${_cached_gui_request}" STREQUAL "${GUI_VERSION}")
   file(SIZE "${GUI_DIR}/sunshine-gui.exe" _cached_gui_size)
-  file(SIZE "${GUI_DIR}/alkaidlab-plugin-stylus.dll" _cached_plugin_size)
-  if(_cached_gui_size GREATER 0 AND _cached_plugin_size GREATER 0)
+  if(_cached_gui_size GREATER 0)
     message(STATUS "GUI bundle already cached at ${GUI_DIR}")
     return()
   endif()
@@ -218,15 +216,13 @@ if(NOT _extract_result EQUAL 0)
   return()
 endif()
 
-if(NOT EXISTS "${_extract_dir}/sunshine-gui.exe" OR
-   NOT EXISTS "${_extract_dir}/alkaidlab-plugin-stylus.dll")
+if(NOT EXISTS "${_extract_dir}/sunshine-gui.exe")
   message(WARNING "GUI bundle ${GUI_ASSET_NAME} is incomplete")
   file(REMOVE_RECURSE "${_extract_dir}")
   return()
 endif()
 file(SIZE "${_extract_dir}/sunshine-gui.exe" _extracted_gui_size)
-file(SIZE "${_extract_dir}/alkaidlab-plugin-stylus.dll" _extracted_plugin_size)
-if(_extracted_gui_size EQUAL 0 OR _extracted_plugin_size EQUAL 0)
+if(_extracted_gui_size EQUAL 0)
   message(WARNING "GUI bundle ${GUI_ASSET_NAME} contains an empty required file")
   file(REMOVE_RECURSE "${_extract_dir}")
   return()
@@ -236,10 +232,6 @@ endif()
 # first so an interrupted copy cannot make a mixed bundle look complete.
 file(REMOVE "${_gui_stamp}")
 configure_file("${_extract_dir}/sunshine-gui.exe" "${GUI_DIR}/sunshine-gui.exe" COPYONLY)
-configure_file(
-  "${_extract_dir}/alkaidlab-plugin-stylus.dll"
-  "${GUI_DIR}/alkaidlab-plugin-stylus.dll"
-  COPYONLY)
 if(EXISTS "${_extract_dir}/WebView2Loader.dll")
   configure_file(
     "${_extract_dir}/WebView2Loader.dll"

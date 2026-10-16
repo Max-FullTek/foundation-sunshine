@@ -6,7 +6,7 @@ import {
   normalizePerAppGamepadMode,
 } from '../utils/gamepadModes.js'
 
-test('per-app gamepad choices include DualSense', () => {
+test('per-app gamepad choices include the retained emulation modes', () => {
   assert.deepEqual(
     PER_APP_GAMEPAD_MODES.map(({ value }) => value),
     ['', 'auto', 'x360', 'ds4', 'ds5'],

@@ -22,7 +22,6 @@
 #include <fstream>
 #ifdef _WIN32
   #include "src/display_device/vdd_utils.h"
-  #include "src/platform/windows/mic_write.h"
   #include "src/platform/windows/vulkan_hdr_bridge_session.h"
 #endif
 
@@ -299,112 +298,6 @@ namespace confighttp::diagnostics {
       outputTree.put("status", true);
     }
 
-    void
-    testMicrophone(resp_https_t response, req_https_t request) {
-      if (!authenticate(response, request)) return;
-
-#ifdef _WIN32
-      const auto result = platf::audio::test_mic_redirect();
-      send_response(response, nlohmann::json {
-                                { "success", result.success },
-                                { "error_code", result.error_code },
-                                { "backend", result.backend },
-                              });
-#else
-      send_response(response, nlohmann::json {
-                                { "success", false },
-                                { "error_code", "MIC_TEST_UNSUPPORTED" },
-                              });
-#endif
-    }
-
-    void
-    getMicrophoneStatus(resp_https_t response, req_https_t request) {
-      if (!authenticate(response, request)) return;
-
-#ifdef _WIN32
-      const auto status = platf::audio::mic_redirect_status();
-      send_response(response, nlohmann::json {
-                                { "success", true },
-                                { "configured_backend", status.configured_backend },
-                                { "active_backend", status.active_backend },
-                                { "fallback_reason", status.fallback_reason },
-                                { "component_available", status.component_available },
-                                { "online", status.online },
-                                { "device_created", status.device_created },
-                                { "host_streaming", status.host_streaming },
-                                { "generation", status.generation },
-                                { "state", status.state },
-                                { "buffered_bytes", status.buffered_bytes },
-                                { "underruns", status.underruns },
-                                { "dropped_frames", status.dropped_frames },
-                                { "submit_errors", status.submit_errors },
-                                { "last_error", status.last_error },
-                                { "error_code", status.error_code },
-                              });
-#else
-      send_response(response, nlohmann::json {
-                                { "success", true },
-                                { "configured_backend", "disabled" },
-                                { "active_backend", "" },
-                                { "state", "unsupported" },
-                                { "component_available", false },
-                              });
-#endif
-    }
-
-#ifdef _WIN32
-    void
-    getVddStatus(resp_https_t response, req_https_t request) {
-      if (!authenticate(response, request)) return;
-
-      const auto status = display_device::vdd_utils::get_vdd_status();
-      send_response(response, nlohmann::json {
-                                { "status", true },
-                                { "state", status.state },
-                                { "installed", status.installed },
-                                { "running", status.running },
-                                { "control_available", status.control_available },
-                                { "monitor_active", status.monitor_active },
-                                { "problem_code_valid", status.problem_code_valid },
-                                { "problem_code", status.problem_code },
-                                { "version_supported", false },
-                              });
-    }
-#endif
-
-#ifdef _WIN32
-    void
-    writeVulkanHdrBridgeStatus(resp_https_t response, bool operation_status) {
-      const auto bridge_status = platf::vulkan_hdr_bridge::status();
-      nlohmann::json output {
-        { "status", operation_status },
-        { "state", bridge_status.state },
-        { "message", bridge_status.message },
-        { "registered", bridge_status.registered },
-        { "artifacts_installed", bridge_status.artifacts_installed },
-        { "display_available", bridge_status.display_available },
-      };
-      send_response(std::move(response), output);
-    }
-#endif
-
-#ifdef _WIN32
-    void
-    getVulkanHdrBridgeStatus(resp_https_t response, req_https_t request) {
-      if (!authenticate(response, request)) return;
-      writeVulkanHdrBridgeStatus(response, true);
-    }
-#endif
-
-#ifdef _WIN32
-    void
-    validateVulkanHdrBridge(resp_https_t response, req_https_t request) {
-      if (!authenticate(response, request)) return;
-      writeVulkanHdrBridgeStatus(response, platf::vulkan_hdr_bridge::validate_now());
-    }
-#endif
-
   }  // namespace
 
   void
@@ -414,8 +307,6 @@ namespace confighttp::diagnostics {
     server.resource["^/api/restart$"]["GET"] = restart;
     server.resource["^/api/boom$"]["GET"] = boom;
     server.resource["^/api/reset-display-device-persistence$"]["POST"] = resetDisplayDevicePersistence;
-    server.resource["^/api/microphone/test$"]["POST"] = testMicrophone;
-    server.resource["^/api/microphone/status$"]["GET"] = getMicrophoneStatus;
 #ifdef _WIN32
     server.resource["^/api/vdd/status$"]["GET"] = getVddStatus;
 #endif

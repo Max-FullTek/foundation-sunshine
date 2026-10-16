@@ -68,7 +68,7 @@ namespace confighttp::runtime {
           session_obj["bitrate"] = session_info.bitrate;
           session_obj["host_audio"] = session_info.host_audio;
           session_obj["enable_hdr"] = session_info.enable_hdr;
-          session_obj["enable_mic"] = session_info.enable_mic;
+          session_obj["enable_mic"] = false;
           session_obj["use_vdd"] = session_info.use_vdd;
           session_obj["hdr_brightness_reported"] = session_info.hdr_brightness_reported;
           session_obj["hdr_brightness_source"] = session_info.hdr_brightness_source;
