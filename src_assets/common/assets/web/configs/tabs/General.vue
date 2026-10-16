@@ -67,7 +67,7 @@ function handleCommandOrderChanged(newOrder) {
       </div>
 
       <!-- Sleep Mode -->
-      <div class="settings-field">
+      <div class="settings-field settings-field-wide">
         <label for="sleep_mode" class="form-label">{{ $t('config.sleep_mode') }}</label>
         <select id="sleep_mode" class="form-select" v-model="config.sleep_mode">
           <option value="0">{{ $t('config.sleep_mode_suspend') }}</option>

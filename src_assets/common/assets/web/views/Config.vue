@@ -639,6 +639,10 @@ onUnmounted(() => {
       gap: 0.85rem;
     }
 
+    .settings-field-wide {
+      grid-column: 1 / -1;
+    }
+
     .settings-field,
     .settings-panel {
       min-width: 0;
