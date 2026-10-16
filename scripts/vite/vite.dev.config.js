@@ -4,6 +4,7 @@ import { defineConfig } from 'vite'
 import { ViteEjsPlugin } from './vite-plugin-ejs.js'
 import vue from '@vitejs/plugin-vue'
 import mkcert from 'vite-plugin-mkcert'
+import { sharedResolve, sharedCss, sharedComponents } from './shared-frontend.js'
 
 // 静态资源路径
 const assetsSrcPath = 'src_assets/common/assets/web'
@@ -49,7 +50,9 @@ function createProxyLogger(prefix, target, rewritePath) {
 
 export default defineConfig({
   resolve: {
+    ...sharedResolve,
     alias: {
+      ...sharedResolve.alias,
       vue: 'vue/dist/vue.esm-bundler.js',
       '@fortawesome/fontawesome-free': resolve('node_modules/@fortawesome/fontawesome-free'),
       bootstrap: resolve('node_modules/bootstrap'),
@@ -57,6 +60,7 @@ export default defineConfig({
   },
   plugins: [
     vue(),
+    sharedComponents(),
     mkcert(),
     ViteEjsPlugin({
       header,
@@ -73,6 +77,7 @@ export default defineConfig({
       },
     },
   ],
+  css: sharedCss,
   root: resolve(assetsSrcPath),
   server: {
     https: true,

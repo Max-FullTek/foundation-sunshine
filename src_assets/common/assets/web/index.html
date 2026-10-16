@@ -9,14 +9,13 @@
   </body>
 
   <script type="module">
-    import { createApp } from 'vue'
-    import { initApp } from './init'
+    import { initApp, createSharedApp } from './init'
     import Home from './views/Home.vue'
 
     console.log('Hello, Sunshine!')
 
     // 创建应用实例
-    const app = createApp(Home)
+    const app = createSharedApp(Home)
 
     // 初始化应用（包含 i18n 等）
     initApp(app)

@@ -1,6 +1,10 @@
 <template>
   <div class="page-config">
     <Navbar />
+    <div class="container config-heading-container">
+    <PageHeader :title="$t('config.configuration')" icon="fas fa-sliders">
+    <template #actions>
+    <a class="btn btn-outline-secondary" href="/?setup=1">{{ $t('setup.rerun') }}</a>
     <div class="config-floating-buttons">
       <button
         type="button"
@@ -81,6 +85,9 @@
       </div>
     </div>
 
+    </template>
+    </PageHeader>
+    </div>
     <ConfirmDialog
       :show="showRiskConfirm"
       dialog-id="risk-confirm"
@@ -135,8 +142,7 @@
       </template>
     </ConfirmDialog>
 
-    <div class="container">
-      <h1 class="mt-2 mb-4 page-title">{{ $t('config.configuration') }}</h1>
+    <div class="container config-content-container">
 
       <div v-if="!config" class="form card config-skeleton">
         <div class="card-header skeleton-header">
@@ -237,6 +243,7 @@
 </template>
 
 <script setup>
+import PageHeader from '../components/common/PageHeader.vue'
 import { ref, watch, onMounted, provide, computed, onUnmounted, nextTick, defineAsyncComponent } from 'vue'
 import Navbar from '../components/layout/Navbar.vue'
 import ConfirmDialog from '../components/common/ConfirmDialog.vue'

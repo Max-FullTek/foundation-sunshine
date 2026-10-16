@@ -4,6 +4,7 @@ import { defineConfig } from 'vite'
 import { ViteEjsPlugin } from './vite-plugin-ejs.js'
 import vue from '@vitejs/plugin-vue'
 import process from 'process'
+import { sharedResolve, sharedCss, sharedComponents } from './shared-frontend.js'
 
 /**
  * Before actually building the pages with Vite, we do an intermediate build step using ejs
@@ -32,12 +33,9 @@ const header = fs.readFileSync(resolve(assetsSrcPath, 'template_header.html'))
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  resolve: {
-    alias: {
-      vue: 'vue/dist/vue.esm-bundler.js',
-    },
-  },
-  plugins: [vue(), ViteEjsPlugin({ header })],
+  resolve: sharedResolve,
+  plugins: [vue(), ViteEjsPlugin({ header }), sharedComponents()],
+  css: sharedCss,
   root: resolve(assetsSrcPath),
   preview: {
     port: 3000,

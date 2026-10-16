@@ -1181,6 +1181,7 @@
     "voidlink_title": "虚空终端 (VoidLink)"
   },
   "setup": {
+    "rerun": "重新运行设置向导",
     "adapter_info": "配置摘要",
     "android_client": "安卓客户端",
     "base_display_title": "基地显示器",

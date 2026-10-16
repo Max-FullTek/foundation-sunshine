@@ -1,37 +1,10 @@
-import { computed, reactive, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { translateFallback } from '../utils/localizedMessage.js'
 import { AppService } from '../services/appService.js'
 import { APP_CONSTANTS, ENV_VARS_CONFIG } from '../utils/constants.js'
 import { debounce, deepClone } from '../utils/helpers.js'
-import { apiPostJson } from '../utils/apiFetch.js'
 import { trackEvents } from '../config/firebase.js'
-import {
-  applyGameLibraryOverrides,
-  getGameResourceKey,
-  rememberGameLibraryApp,
-} from '../utils/agents/gameLibrary/gameLibraryCuratorAgent.js'
-
 const MESSAGE_DURATION = 3000
-const REMOTE_IMAGE_URL_RE = /^https?:\/\//i
-const COVER_LOCALIZATION_CONCURRENCY = 4
-const COVER_LOCALIZATION_FAILED_FIELD = 'cover-localization-failed'
-
-async function mapWithConcurrency(items, concurrency, mapper) {
-  const results = new Array(items.length)
-  let nextIndex = 0
-  const workerCount = Math.min(Math.max(1, concurrency), items.length)
-  const workers = Array.from({ length: workerCount }, async () => {
-    while (nextIndex < items.length) {
-      const currentIndex = nextIndex
-      nextIndex += 1
-      results[currentIndex] = await mapper(items[currentIndex], currentIndex)
-    }
-  })
-
-  await Promise.all(workers)
-  return results
-}
-
 /**
  * 应用管理组合式函数
  */
@@ -50,28 +23,6 @@ export function useApps() {
   const messageType = ref('success')
   const envVars = ref({})
   const debouncedSearch = ref(null)
-  const isScanning = ref(false)
-  const scannedApps = ref([])
-  const scannedEditSource = ref(null)
-  const showScanResult = ref(false)
-  const showScanOptions = ref(false)
-  const scanProgress = reactive({
-    active: false,
-    stage: '',
-    detail: '',
-    current: 0,
-    total: 0,
-    indeterminate: false,
-  })
-  const scanOptions = reactive({
-    scope: 'libraries',
-    platforms: {
-      steam: true,
-      epic: true,
-      gog: true,
-    },
-    extractIcons: true,
-  })
   const deleteConfirmIndex = ref(null)
 
   // 批量删除：selectionMode 仅控制 UI 是否显示多选 checkbox；
@@ -102,16 +53,6 @@ export function useApps() {
       index: appIndexByReference.value.get(app) ?? -1,
     }))
   )
-  const scanProgressPercent = computed(() => {
-    if (!scanProgress.active || scanProgress.indeterminate || !scanProgress.total) return 0
-    return Math.max(0, Math.min(100, Math.round((scanProgress.current / scanProgress.total) * 100)))
-  })
-  const scanPlatformOptions = [
-    { id: 'steam', label: 'Steam' },
-    { id: 'epic', label: 'Epic Games' },
-    { id: 'gog', label: 'GOG' },
-  ]
-
   // 消息图标映射
   const MESSAGE_ICONS = {
     success: 'fa-check-circle',
@@ -129,70 +70,6 @@ export function useApps() {
   }
 
   const getMessageIcon = () => MESSAGE_ICONS[messageType.value] || MESSAGE_ICONS.success
-
-  let scanProgressHideTimer = null
-
-  const setScanProgress = (next = {}) => {
-    if (scanProgressHideTimer) {
-      clearTimeout(scanProgressHideTimer)
-      scanProgressHideTimer = null
-    }
-
-    Object.assign(scanProgress, {
-      active: true,
-      stage: next.stage || scanProgress.stage || translate('apps.feedback.enriching'),
-      detail: next.detail || '',
-      current: Number.isFinite(Number(next.current)) ? Number(next.current) : scanProgress.current,
-      total: Number.isFinite(Number(next.total)) ? Number(next.total) : scanProgress.total,
-      indeterminate: Boolean(next.indeterminate),
-    })
-  }
-
-  const resetScanProgress = () => {
-    if (scanProgressHideTimer) {
-      clearTimeout(scanProgressHideTimer)
-      scanProgressHideTimer = null
-    }
-    Object.assign(scanProgress, {
-      active: false,
-      stage: '',
-      detail: '',
-      current: 0,
-      total: 0,
-      indeterminate: false,
-    })
-  }
-
-  const openScanOptions = () => {
-    showScanOptions.value = true
-  }
-
-  const closeScanOptions = () => {
-    if (!isScanning.value) {
-      showScanOptions.value = false
-    }
-  }
-
-  const getSelectedScanPlatforms = () => scanPlatformOptions
-    .filter((platformOption) => scanOptions.platforms[platformOption.id])
-    .map((platformOption) => platformOption.id)
-
-  const runConfiguredScan = async () => {
-    if (scanOptions.scope === 'directory') {
-      showScanOptions.value = false
-      await scanDirectory(scanOptions.extractIcons)
-      return
-    }
-
-    const platforms = getSelectedScanPlatforms()
-    if (platforms.length === 0) {
-      showMessage(translate('apps.feedback.platform_required'), APP_CONSTANTS.MESSAGE_TYPES.WARNING)
-      return
-    }
-
-    showScanOptions.value = false
-    await scanGameLibraries({ platforms })
-  }
 
   const createDefaultApp = (overrides = {}) => ({
     ...APP_CONSTANTS.DEFAULT_APP,
@@ -254,17 +131,14 @@ export function useApps() {
 
   const newApp = () => {
     trackEvents.userAction('new_app_clicked')
-    scannedEditSource.value = null
     editingApp.value = createDefaultApp()
   }
 
   const editApp = (index) => {
-    scannedEditSource.value = null
     editingApp.value = { ...deepClone(apps.value[index]), index }
   }
 
   const closeAppEditor = () => {
-    scannedEditSource.value = null
     editingApp.value = null
   }
 
@@ -273,12 +147,8 @@ export function useApps() {
       isSaving.value = true
 
       await AppService.saveApps(apps.value, appData)
-      if (scannedEditSource.value) {
-        rememberGameLibraryApp(scannedEditSource.value, appData)
-      }
       await loadApps()
-      scannedEditSource.value = null
-      editingApp.value = null
+        editingApp.value = null
       showMessage(translate('apps.feedback.save_success'), APP_CONSTANTS.MESSAGE_TYPES.SUCCESS)
     } catch (error) {
       console.error('保存应用失败:', error)
@@ -459,296 +329,6 @@ export function useApps() {
     await save()
   }
 
-  // 封面搜索相关（使用共享的 coverSearch 模块）
-
-  // Tauri 环境检测
-  const isTauriEnv = () => !!window.__TAURI__?.core?.invoke
-
-  let scanKeySequence = 0
-  const withScanKeys = (appList) => {
-    const scanId = scanKeySequence++
-    return Array.isArray(appList)
-      ? appList.map((app, index) => ({
-          ...app,
-          '__scan-key': app['__scan-key'] || `scan-${scanId}-${index}`,
-        }))
-      : appList
-  }
-
-  // 扫描目录功能
-  const scanDirectory = async (extractIcons = true) => {
-    const tauri = window.__TAURI__
-    if (!tauri?.core?.invoke) {
-      showMessage(translate('apps.feedback.scan_unavailable'), APP_CONSTANTS.MESSAGE_TYPES.WARNING)
-      return
-    }
-
-    if (!tauri?.dialog?.open) {
-      showMessage(translate('apps.file_selection.dialog_unavailable'), APP_CONSTANTS.MESSAGE_TYPES.ERROR)
-      return
-    }
-
-    try {
-      const selectedDir = await tauri.dialog.open({
-        directory: true,
-        multiple: false,
-        title: translate('apps.file_selection.select_directory'),
-      })
-
-      if (!selectedDir) return
-
-      isScanning.value = true
-      showMessage(`${translate('apps.scan_options.directory_scan')}…`, APP_CONSTANTS.MESSAGE_TYPES.INFO)
-
-      const foundApps = await tauri.core.invoke('scan_directory_for_apps', {
-        directory: selectedDir,
-        extractIcons,
-      })
-
-      if (foundApps.length === 0) {
-        scannedApps.value = []
-        showScanResult.value = true
-        showMessage(translate('apps.scan_result_no_apps'), APP_CONSTANTS.MESSAGE_TYPES.INFO)
-      } else {
-        // 先显示扫描结果（无封面）
-        const overriddenApps = withScanKeys(applyGameLibraryOverrides(foundApps))
-        scannedApps.value = overriddenApps
-        showScanResult.value = true
-        showMessage(translate('apps.feedback.found', { count: foundApps.length }), APP_CONSTANTS.MESSAGE_TYPES.INFO)
-
-        // 异步更新封面图片
-      }
-
-      trackEvents.userAction('directory_scanned', { count: foundApps.length, extractIcons })
-    } catch (error) {
-      console.error('扫描目录失败:', error)
-      showMessage(translate('apps.feedback.scan_failed'), APP_CONSTANTS.MESSAGE_TYPES.ERROR)
-    } finally {
-      isScanning.value = false
-    }
-  }
-
-  // 扫描游戏平台库（Steam/Epic/GOG）
-  const scanGameLibraries = async (options = {}) => {
-    const tauri = window.__TAURI__
-    if (!tauri?.core?.invoke) {
-      showMessage(translate('apps.feedback.scan_unavailable'), APP_CONSTANTS.MESSAGE_TYPES.WARNING)
-      return
-    }
-
-    try {
-      isScanning.value = true
-      showMessage(`${translate('apps.scan_library')}…`, APP_CONSTANTS.MESSAGE_TYPES.INFO)
-
-      const requestedPlatforms = options.platforms || scanPlatformOptions.map((platformOption) => platformOption.id)
-      const result = await tauri.core.invoke('scan_game_libraries', {
-        platforms: requestedPlatforms,
-      })
-
-      // 将 PlatformGame 转换为 scannedApps 格式
-      const selectedPlatforms = new Set(requestedPlatforms)
-      const steamGames = selectedPlatforms.has('steam') ? result.steam || [] : []
-      const epicGames = selectedPlatforms.has('epic') ? result.epic || [] : []
-      const gogGames = selectedPlatforms.has('gog') ? result.gog || [] : []
-      const allGames = [...steamGames, ...epicGames, ...gogGames]
-
-      if (allGames.length === 0) {
-        scannedApps.value = []
-        showScanResult.value = true
-        showMessage(translate('apps.scan_result_no_apps'), APP_CONSTANTS.MESSAGE_TYPES.INFO)
-      } else {
-        const mapped = allGames.map((game) => ({
-          name: game.name,
-          cmd: game.cmd,
-          'working-dir': game['working-dir'] || game.working_dir || '',
-          'image-path': game['cover-url'] || game.cover_url || '',
-          source_path: game.install_dir,
-          'app-type': game.platform,
-          'is-game': true,
-        }))
-
-        const overriddenApps = withScanKeys(applyGameLibraryOverrides(mapped))
-        scannedApps.value = overriddenApps
-        showScanResult.value = true
-
-        const parts = []
-        if (steamGames.length) parts.push(`Steam ${steamGames.length}`)
-        if (epicGames.length) parts.push(`Epic ${epicGames.length}`)
-        if (gogGames.length) parts.push(`GOG ${gogGames.length}`)
-        showMessage(
-          `${translate('apps.feedback.found', { count: result.total ?? allGames.length })} (${parts.join(', ')}, ${result.scan_time_ms ?? 0} ms)`,
-          APP_CONSTANTS.MESSAGE_TYPES.SUCCESS
-        )
-      }
-
-      trackEvents.userAction('game_libraries_scanned', {
-        steam: steamGames.length,
-        epic: epicGames.length,
-        gog: gogGames.length,
-        total: result.total ?? allGames.length,
-      })
-    } catch (error) {
-      console.error('扫描游戏库失败:', error)
-      showMessage(translate('apps.feedback.scan_failed'), APP_CONSTANTS.MESSAGE_TYPES.ERROR)
-    } finally {
-      isScanning.value = false
-    }
-  }
-
-  // 异步更新封面图片
-  const getScannedAppKey = getGameResourceKey
-
-  const getScannedAppField = (app, field) => app[field] || app[field.replace(/-/g, '_')] || ''
-
-  const localizeScannedAppCover = async (scannedApp) => {
-    const imagePath = getScannedAppField(scannedApp, 'image-path')
-    if (!REMOTE_IMAGE_URL_RE.test(imagePath)) {
-      return scannedApp
-    }
-
-    try {
-      const result = await apiPostJson('/api/covers/upload', {
-        key: scannedApp.name,
-        url: imagePath,
-      })
-
-      if (result?.path) {
-        return {
-          ...scannedApp,
-          'image-path': result.path,
-          image_path: result.path,
-          'cover-localized': true,
-        }
-      }
-      console.warn('Cover localization did not return a local path:', scannedApp.name, result)
-    } catch (error) {
-      console.warn('Failed to localize scanned cover:', scannedApp.name, error)
-    }
-
-    return {
-      ...scannedApp,
-      [COVER_LOCALIZATION_FAILED_FIELD]: true,
-    }
-  }
-
-  const createAppFromScanned = (scannedApp) => ({
-    ...APP_CONSTANTS.DEFAULT_APP,
-    name: scannedApp.name,
-    cmd: scannedApp.cmd,
-    'working-dir': getScannedAppField(scannedApp, 'working-dir'),
-    'image-path': getScannedAppField(scannedApp, 'image-path'),
-  })
-
-  const didCoverLocalizationFail = (scannedApp) => scannedApp?.[COVER_LOCALIZATION_FAILED_FIELD] === true
-
-  const findScannedAppIndex = (scannedAppOrIndex) => {
-    if (Number.isInteger(scannedAppOrIndex)) {
-      return scannedAppOrIndex
-    }
-
-    let index = scannedApps.value.indexOf(scannedAppOrIndex)
-    if (index === -1 && scannedAppOrIndex?.source_path) {
-      index = scannedApps.value.findIndex((app) => app.source_path === scannedAppOrIndex.source_path)
-    }
-    return index
-  }
-
-  const removeScannedApp = (scannedAppOrIndex) => {
-    const index = findScannedAppIndex(scannedAppOrIndex)
-    if (index >= 0 && index < scannedApps.value.length) {
-      scannedApps.value.splice(index, 1)
-      if (scannedApps.value.length === 0) {
-        showScanResult.value = false
-      }
-    }
-  }
-
-  const showCoverLocalizationMessage = (localizedApp, successMessage, successType) => {
-    const failed = didCoverLocalizationFail(localizedApp)
-    showMessage(
-      failed ? translate('apps.feedback.cover_warning', { message: successMessage }) : successMessage,
-      failed ? APP_CONSTANTS.MESSAGE_TYPES.WARNING : successType
-    )
-  }
-
-  const addScannedApp = async (scannedApp) => {
-    const localizedApp = await localizeScannedAppCover(scannedApp)
-
-    editingApp.value = createDefaultApp({
-      name: localizedApp.name,
-      cmd: localizedApp.cmd,
-      'working-dir': getScannedAppField(localizedApp, 'working-dir'),
-      'image-path': getScannedAppField(localizedApp, 'image-path'),
-    })
-    scannedEditSource.value = { ...localizedApp }
-
-    removeScannedApp(scannedApp)
-    showCoverLocalizationMessage(localizedApp, translate('apps.feedback.editing', { name: scannedApp.name }), APP_CONSTANTS.MESSAGE_TYPES.INFO)
-    trackEvents.userAction('scanned_app_edit', { name: scannedApp.name })
-  }
-
-  const quickAddScannedApp = async (scannedApp) => {
-    try {
-      const localizedApp = await localizeScannedAppCover(scannedApp)
-      const appToAdd = createAppFromScanned(localizedApp)
-
-      apps.value.push(appToAdd)
-      await AppService.saveApps(apps.value, null)
-      rememberGameLibraryApp(scannedApp, appToAdd)
-      await loadApps()
-
-      removeScannedApp(scannedApp)
-
-      showCoverLocalizationMessage(localizedApp, translate('apps.feedback.added', { name: scannedApp.name }), APP_CONSTANTS.MESSAGE_TYPES.SUCCESS)
-      trackEvents.userAction('scanned_app_quick_added', { name: scannedApp.name })
-    } catch (error) {
-      console.error('快速添加应用失败:', error)
-      showMessage(translate('apps.feedback.add_failed'), APP_CONSTANTS.MESSAGE_TYPES.ERROR)
-    }
-  }
-
-  const addAllScannedApps = async () => {
-    if (scannedApps.value.length === 0) return
-
-    try {
-      isSaving.value = true
-      const scannedAppSnapshot = [...scannedApps.value]
-      const localizedScannedApps = await mapWithConcurrency(
-        scannedAppSnapshot,
-        COVER_LOCALIZATION_CONCURRENCY,
-        localizeScannedAppCover
-      )
-      const appsToAdd = localizedScannedApps.map(createAppFromScanned)
-
-      apps.value.push(...appsToAdd)
-      await AppService.saveApps(apps.value, null)
-      scannedAppSnapshot.forEach((scannedApp, index) => rememberGameLibraryApp(scannedApp, appsToAdd[index]))
-      await loadApps()
-
-      const coverLocalizationFailureCount = localizedScannedApps.filter(didCoverLocalizationFail).length
-      showMessage(
-        coverLocalizationFailureCount > 0
-          ? translate('apps.feedback.added_count_cover_failed', { count: appsToAdd.length, failed: coverLocalizationFailureCount })
-          : translate('apps.feedback.added_count', { count: appsToAdd.length }),
-        coverLocalizationFailureCount > 0 ? APP_CONSTANTS.MESSAGE_TYPES.WARNING : APP_CONSTANTS.MESSAGE_TYPES.SUCCESS
-      )
-      trackEvents.userAction('scanned_apps_batch_added', { count: appsToAdd.length })
-
-      scannedApps.value = []
-      showScanResult.value = false
-    } catch (error) {
-      console.error('批量添加应用失败:', error)
-      showMessage(translate('apps.feedback.add_failed'), APP_CONSTANTS.MESSAGE_TYPES.ERROR)
-    } finally {
-      isSaving.value = false
-    }
-  }
-
-  const closeScanResult = () => {
-    showScanResult.value = false
-    scannedApps.value = []
-  }
-
   const handleCopySuccess = () => showMessage(translate('_common.copied'), APP_CONSTANTS.MESSAGE_TYPES.SUCCESS)
   const handleCopyError = () => showMessage(translate('apps.copy_failed_manual'), APP_CONSTANTS.MESSAGE_TYPES.ERROR)
 
@@ -766,20 +346,12 @@ export function useApps() {
     message,
     envVars,
     debouncedSearch,
-    isScanning,
-    scannedApps,
-    showScanResult,
-    showScanOptions,
-    scanProgress,
-    scanOptions,
-    scanPlatformOptions,
     selectionMode,
     selectedIndices,
     batchDeleteConfirm,
     isBatchDeleting,
     // 计算属性
     messageClass,
-    scanProgressPercent,
     // 方法
     init,
     loadApps,
@@ -807,15 +379,6 @@ export function useApps() {
     hasUnsavedChanges,
     onDragStart,
     onDragEnd,
-    openScanOptions,
-    closeScanOptions,
-    runConfiguredScan,
-    addScannedApp,
-    quickAddScannedApp,
-    addAllScannedApps,
-    closeScanResult,
-    removeScannedApp,
-    isTauriEnv,
     getMessageIcon,
     handleCopySuccess,
     handleCopyError,

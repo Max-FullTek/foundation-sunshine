@@ -1,6 +1,12 @@
 import i18n from './config/i18n.js'
 import { markWebUiReady } from './utils/appReady.js'
 import { installExternalLinkHandler } from './utils/helpers.js'
+import { createApp, h } from 'vue'
+import SharedShell from './components/layout/SharedShell.vue'
+
+export const createSharedApp = (page) => createApp({
+    render: () => h(SharedShell, null, { default: () => h(page) }),
+})
 
 // must import even if not implicitly using here
 // https://github.com/aurelia/skeleton-navigation/issues/894
@@ -20,9 +26,10 @@ export async function initApp(app, config) {
 
         app.use(i18nInstance)
         app.provide('i18n', i18nInstance.global)
+        app.provide('shared-shell', true)
         const root = app.mount('#app')
         config?.(app)
-        // Let Vue finish the mount microtask before the GUI reveals the iframe.
+        // Let Vue finish the mount microtask before reporting page readiness.
         await Promise.resolve()
         return root
     } finally {

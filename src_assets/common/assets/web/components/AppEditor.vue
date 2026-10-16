@@ -344,14 +344,6 @@
                 </FormField>
               </AccordionItem>
 
-              <AccordionItem id="image" icon="fa-image" :title="t('apps.image_settings')" parent-id="appFormAccordion">
-                <ImageSelector
-                  :image-path="formData['image-path']"
-                  :app-name="formData.name"
-                  @update-image="updateImage"
-                  @image-error="handleImageError"
-                />
-              </AccordionItem>
             </div>
           </form>
         </div>
@@ -359,9 +351,6 @@
           <div class="save-status">
             <span v-if="isFormValid" class="text-success"> <i class="fas fa-check-circle me-1"></i>{{ t('apps.form_valid') }} </span>
             <span v-else class="text-warning"> <i class="fas fa-exclamation-triangle me-1"></i>{{ t('apps.form_invalid') }} </span>
-            <div v-if="imageError" class="text-danger mt-1">
-              <i class="fas fa-exclamation-circle me-1"></i>{{ imageError }}
-            </div>
           </div>
           <div>
             <button type="button" class="btn btn-secondary me-2" @click="closeModal">
@@ -383,7 +372,6 @@ import { useI18n } from 'vue-i18n'
 import { validateField as validateFieldHelper, validateAppForm } from '../utils/validation.js'
 import { nanoid } from 'nanoid'
 import CommandTable from './CommandTable.vue'
-import ImageSelector from './ImageSelector.vue'
 import AccordionItem from './AccordionItem.vue'
 import FormField from './FormField.vue'
 import CheckboxField from './CheckboxField.vue'
@@ -444,7 +432,6 @@ const fileInput = ref(null)
 const dirInput = ref(null)
 const formData = ref(null)
 const validation = ref({})
-const imageError = ref('')
 const modalInstance = ref(null)
 const fileSelector = ref(null)
 
@@ -543,7 +530,6 @@ const initializeForm = (app) => {
   formData.value = { ...DEFAULT_FORM_DATA, ...deepClone(app) }
   ensureDefaultValues()
   validation.value = {}
-  imageError.value = ''
   // 立即验证所有字段，确保表单状态正确
   nextTick(() => {
     // 验证必填字段 name（总是验证）
@@ -671,15 +657,6 @@ const removeDetachedCommand = (index) => {
 
 const handleDetachedCommandOrderChanged = (newOrder) => {
   formData.value.detached = newOrder
-}
-
-const updateImage = (imagePath) => {
-  formData.value['image-path'] = imagePath
-  imageError.value = ''
-}
-
-const handleImageError = (error) => {
-  imageError.value = error
 }
 
 const onFilePathSelected = (fieldName, filePath) => {

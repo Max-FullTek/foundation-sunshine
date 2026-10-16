@@ -1181,6 +1181,7 @@
     "voidlink_title": "VoidLink"
   },
   "setup": {
+    "rerun": "Run setup wizard again",
     "adapter_info": "Configuration Summary",
     "android_client": "Android Client",
     "base_display_title": "Virtual Display",

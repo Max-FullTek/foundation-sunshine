@@ -5,6 +5,14 @@ import {
   useSetupWizard,
 } from '../composables/useSetupWizard.js'
 
+test('explicitly rerunning setup preserves the saved completion marker', () => {
+  const config = { setup_wizard_completed: true, locale: 'zh_TW' }
+  const wizard = useSetupWizard()
+  assert.equal(wizard.checkSetupWizard(config), false)
+  assert.equal(wizard.checkSetupWizard(config, { force: true }), true)
+  assert.equal(config.setup_wizard_completed, true)
+})
+
 function setNavigatorLanguages(languages) {
   Object.defineProperty(globalThis, 'navigator', {
     value: {

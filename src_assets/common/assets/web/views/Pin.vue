@@ -2,7 +2,7 @@
   <div class="pin-page">
     <Navbar />
     <div id="content" class="container">
-      <h1 class="mt-2 mb-4 text-center page-title">{{ $t('pin.pin_pairing') }}</h1>
+      <PageHeader :title="$t('pin.pin_pairing')" icon="fas fa-link" />
 
       <!-- QR Code Pairing -->
       <div class="card mb-4 qr-pair-card">
@@ -362,6 +362,7 @@
 </template>
 
 <script setup>
+import PageHeader from '../components/common/PageHeader.vue'
 import { onMounted, ref, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Tooltip } from 'bootstrap'

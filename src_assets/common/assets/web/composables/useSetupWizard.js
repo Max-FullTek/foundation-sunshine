@@ -52,10 +52,10 @@ export function useSetupWizard() {
   const hasLocale = ref(false)
 
   // 检查是否需要显示设置向导
-  const checkSetupWizard = (config) => {
+  const checkSetupWizard = (config, { force = false } = {}) => {
     const setupCompleted = isTrue(config.setup_wizard_completed)
     
-    if (setupCompleted) {
+    if (setupCompleted && !force) {
       clearSavedLanguageMarker()
       return false
     }

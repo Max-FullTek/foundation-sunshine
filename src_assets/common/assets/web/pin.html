@@ -9,11 +9,10 @@
   </body>
 
   <script type="module">
-    import { createApp } from 'vue'
-    import { initApp } from './init'
+    import { initApp, createSharedApp } from './init'
     import Pin from './views/Pin.vue'
 
-    const app = createApp(Pin)
+    const app = createSharedApp(Pin)
     initApp(app)
   </script>
 </html>

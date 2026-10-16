@@ -33,23 +33,6 @@ test('app action notifications follow locale changes and translate failures', as
   assert.equal(apps.message.value, cs._common.copied)
 })
 
-test('scan platform validation and desktop-only warning use the selected locale', async context => {
-  context.mock.timers.enable({ apis: ['setTimeout'] })
-  const previous = globalThis.window
-  globalThis.window = {}
-  context.after(() => { if (previous === undefined) delete globalThis.window; else globalThis.window = previous })
-  const i18n = translator()
-  i18n.locale.value = 'cs'
-  const apps = useApps()
-  apps.init(i18n.t)
-  for (const key of Object.keys(apps.scanOptions.platforms)) apps.scanOptions.platforms[key] = false
-  await apps.runConfiguredScan()
-  assert.equal(apps.message.value, cs.apps.feedback.platform_required)
-  apps.scanOptions.scope = 'directory'
-  await apps.runConfiguredScan()
-  assert.equal(apps.message.value, cs.apps.feedback.scan_unavailable)
-})
-
 test('all locale catalogs supply feedback keys with matching interpolation parameters', () => {
   const directory = new URL('../public/assets/locale/', import.meta.url)
   for (const file of readdirSync(directory).filter(file => file.endsWith('.json'))) {

@@ -1,5 +1,5 @@
 <template>
-  <nav
+  <nav v-if="!sharedShell"
     class="navbar navbar-light navbar-expand-md navbar-background header"
     :class="{ 'navbar-embedded': isEmbeddedGui }"
   >
@@ -41,7 +41,7 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ThemeToggle from '../common/ThemeToggle.vue'
 import AccountMenu from '../common/AccountMenu.vue'
@@ -57,6 +57,7 @@ const navItems = Object.freeze([
 
 // 使用背景管理 composable
 const { t } = useI18n()
+const sharedShell = inject('shared-shell', false)
 const { loadBackground, addDragListeners } = useBackground({ translate: t })
 const isEmbeddedGui = window.isTauri === true && window.parent !== window
 
@@ -98,6 +99,7 @@ const handleBackgroundError = (error) => {
 }
 
 onMounted(async () => {
+  if (sharedShell) return
   await loadBackground()
   updateCurrentPath()
   removeDragListeners = addDragListeners(handleBackgroundError)
@@ -149,7 +151,7 @@ onUnmounted(() => {
 </style>
 
 <style>
-html[data-sunshine-gui='true'] body {
+html[data-sunshine-gui='true']:not([data-sunshine-navigation='unified']) body {
   padding-top: 77px !important;
 }
 
