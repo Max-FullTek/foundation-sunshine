@@ -248,71 +248,7 @@
                 {{ saveError }}
               </div>
 
-              <!-- 推荐服务 -->
-              <div class="promo-service-section mt-3">
-                <h5 class="mb-3">
-                  <i class="fas fa-bullhorn"></i>
-                  {{ $t('setup.featured_services') }}
-                </h5>
-                <div class="promo-service-links">
-                  <ResourceLink
-                    v-for="resource in FEATURED_RESOURCES"
-                    :key="resource.id"
-                    :href="resourceHref(resource)"
-                    :title="resourceTitle(resource)"
-                    :description="resourceDescription(resource)"
-                    :image-src="resource.imageSrc"
-                    :image-alt="resourceTitle(resource)"
-                    :variant="resource.variant"
-                  />
-                </div>
-              </div>
 
-              <!-- 客户端下载 -->
-              <div class="client-download-section mt-3">
-                <h5 class="mb-3">
-                  <i class="fas fa-download"></i>
-                  {{ $t('setup.download_clients') }}
-                </h5>
-                <div class="client-download-layout">
-                  <!-- 左侧：应用下载链接 -->
-                  <div class="client-links">
-                    <ResourceLink
-                      v-for="resource in setupClientResources"
-                      :key="resource.id"
-                      :href="resource.href"
-                      :target="resource.action ? '' : '_blank'"
-                      :title="resourceTitle(resource)"
-                      :description="resourceDescription(resource)"
-                      :icon="resource.icon"
-                      :variant="resource.variant"
-                      compact
-                      @activate="handleResourceActivate(resource, $event)"
-                    />
-                  </div>
-                  <!-- 右侧：二维码 -->
-                  <div class="client-qrcodes">
-                    <div class="qr-code-item">
-                      <div class="qr-code-box">
-                        <img :src="androidQrCode" alt="Android QR Code" class="qr-code-image">
-                      </div>
-                      <div class="qr-code-label">
-                        <i class="fas fa-mobile-alt"></i>
-                        {{ $t('setup.android_client') }}
-                      </div>
-                    </div>
-                    <div class="qr-code-item">
-                      <div class="qr-code-box">
-                        <img :src="iosQrCode" alt="iOS QR Code" class="qr-code-image">
-                      </div>
-                      <div class="qr-code-label">
-                        <i class="fas fa-tablet-alt"></i>
-                        {{ $t('setup.ios_client') }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -370,24 +306,6 @@
       </template>
     </ConfirmDialog>
 
-    <ConfirmDialog
-      :show="showHarmonyModal"
-      dialog-id="setup-harmony-link"
-      :title="$t('resource_card.harmony_client')"
-      title-icon="fas fa-mobile-alt"
-      :close-label="$t('_common.close')"
-      @close="closeHarmonyModal"
-    >
-      <p>{{ $t('setup.harmony_modal_link_notice') }}</p>
-      <p>{{ $t('setup.harmony_modal_desc') }}</p>
-      <template #actions>
-        <button type="button" class="btn btn-secondary" @click="closeHarmonyModal">{{ $t('_common.cancel') }}</button>
-        <button type="button" class="btn btn-primary" @click="confirmHarmonyLink">
-          <i class="fas fa-external-link-alt me-1"></i>
-          {{ $t('setup.harmony_goto_repo') }}
-        </button>
-      </template>
-    </ConfirmDialog>
 
     <ConfirmDialog
       :show="showRestartModal"
@@ -420,33 +338,10 @@
 import { trackEvents } from '../config/firebase.js'
 import { apiFetch, apiJson } from '../utils/apiFetch.js'
 import { saveSetupWizardLocale } from '../services/setupWizardService.js'
-import { openExternalUrl } from '../utils/helpers.js'
 import { detectSystemLocale } from '../config/i18n.js'
 import { SETUP_WIZARD_LANGUAGE_SAVED_KEY } from '../composables/useSetupWizard.js'
 import { useVddStatus } from '../composables/useVddStatus.js'
-import ResourceLink from './common/ResourceLink.vue'
 import ConfirmDialog from './common/ConfirmDialog.vue'
-import {
-  CLIENT_RESOURCES,
-  FEATURED_RESOURCES,
-  HARMONY_CLIENT_URL,
-  resolveResourceHref,
-  resolveResourceText,
-} from '../config/resources.js'
-
-const SETUP_CLIENT_RESOURCE_ORDER = [
-  'android-vplus',
-  'harmony-vplus',
-  'voidlink',
-  'moonlight-macos',
-  'moonlight-desktop',
-]
-
-const SETUP_CLIENT_ICON_OVERRIDES = Object.freeze({
-  'android-vplus': 'fas fa-mobile-alt',
-  voidlink: 'fas fa-tablet-alt',
-  'moonlight-macos': 'fas fa-laptop',
-})
 
 const COMPLETION_NOTICES = Object.freeze([
   {
@@ -494,7 +389,7 @@ function markLanguageSavedForReload() {
 
 export default {
   name: 'SetupWizard',
-  components: { ConfirmDialog, ResourceLink },
+  components: { ConfirmDialog },
   props: {
     adapters: {
       type: Array,
@@ -521,19 +416,16 @@ export default {
       saveError: null,
       saving: false,
       showSkipModal: false, // 跳过向导确认弹窗
-      showHarmonyModal: false, // 鸿蒙链接提醒弹窗
       showRestartModal: false, // 重启倒计时弹窗
       restartCountdown: 8, // 倒计时秒数
       restartTimer: null, // 倒计时定时器
       visibleCompletionNoticeIds: [],
       completionNoticeTimer: null,
       // 客户端下载链接
-      androidQrCode: 'https://assets.alkaidlab.com/androidQrCode.png',
-      iosQrCode: 'https://assets.alkaidlab.com/iosQrCode.png',
     }
   },
   setup() {
-    return { FEATURED_RESOURCES, ...useVddStatus() }
+    return { ...useVddStatus() }
   },
   mounted() {
     // 记录进入设置向导
@@ -607,38 +499,13 @@ export default {
         return true
       })
     },
-    setupClientResources() {
-      const resourcesById = new Map(CLIENT_RESOURCES.map((resource) => [resource.id, resource]))
-      const locale = this.selectedLocale || this.$i18n.locale
-      return SETUP_CLIENT_RESOURCE_ORDER
-        .map((id) => resourcesById.get(id))
-        .filter(Boolean)
-        .map((resource) => ({
-          ...resource,
-          href: resolveResourceHref(resource, locale),
-          icon: SETUP_CLIENT_ICON_OVERRIDES[resource.id] || resource.icon,
-        }))
-    }
+
   },
   methods: {
     selectVirtualDisplay() {
       if (this.vddReady) {
         this.selectedDisplay = 'ZakoHDR'
       }
-    },
-    resourceTitle(resource) {
-      return resolveResourceText(this.$t, resource, 'title')
-    },
-    resourceDescription(resource) {
-      return resolveResourceText(this.$t, resource, 'description')
-    },
-    resourceHref(resource) {
-      return resolveResourceHref(resource, this.selectedLocale || this.$i18n.locale)
-    },
-    handleResourceActivate(resource, event) {
-      if (resource.action !== 'harmony') return
-      event.preventDefault()
-      this.openHarmonyModal()
     },
     previousStep() {
       if (this.currentStep > 1) {
@@ -762,12 +629,6 @@ export default {
     closeSkipModal() {
       this.showSkipModal = false
     },
-    openHarmonyModal() {
-      this.showHarmonyModal = true
-    },
-    closeHarmonyModal() {
-      this.showHarmonyModal = false
-    },
     clearCompletionNoticeTimer() {
       if (this.completionNoticeTimer) {
         clearTimeout(this.completionNoticeTimer)
@@ -788,14 +649,6 @@ export default {
       )
       if (this.visibleCompletionNoticeIds.length === 0) {
         this.clearCompletionNoticeTimer()
-      }
-    },
-    async confirmHarmonyLink() {
-      this.closeHarmonyModal()
-      try {
-        await openExternalUrl(HARMONY_CLIENT_URL)
-      } catch (error) {
-        console.error('Failed to open URL:', error)
       }
     },
     async confirmSkipWizard() {
@@ -1329,81 +1182,6 @@ export default {
   background: var(--ui-accent);
 }
 
-/* 完成页资源区样式 */
-.client-download-section,
-.promo-service-section {
-  background: var(--ui-surface);
-  border: 1px solid var(--ui-border);
-  padding: 1em;
-  border-radius: 10px;
-}
-
-.client-download-section h5,
-.promo-service-section h5 {
-  font-size: 1em;
-  margin-bottom: 0.8em;
-  color: var(--ui-text-primary);
-}
-
-.promo-service-links {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75em;
-}
-
-.client-download-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 1.5em;
-  align-items: flex-start;
-}
-
-.client-links {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5em;
-  min-width: 0;
-}
-
-.client-qrcodes {
-  display: grid;
-  grid-template-columns: repeat(2, 168px);
-  gap: 1em;
-  align-items: flex-start;
-  min-width: 0;
-}
-
-.qr-code-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.3em;
-}
-
-.qr-code-box {
-  background: white;
-  padding: 0.4em;
-  border-radius: 8px;
-  box-shadow: var(--ui-shadow-sm);
-  width: 100%;
-}
-
-.qr-code-image {
-  width: 100%;
-  aspect-ratio: 1;
-  display: block;
-}
-
-.qr-code-label {
-  font-size: 0.8em;
-  font-weight: 500;
-  color: var(--ui-text-primary);
-}
-
-.qr-code-label i {
-  margin-right: 0.3em;
-}
-
 .setup-completion-toasts {
   position: fixed;
   top: max(1rem, env(safe-area-inset-top));
@@ -1596,27 +1374,9 @@ export default {
     white-space: nowrap;
   }
 
-  .client-download-layout {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
 
-  .client-links {
-    width: 100%;
-    min-width: 0;
-    grid-template-columns: 1fr;
-  }
 
-  .client-qrcodes {
-    width: 100%;
-    max-width: 360px;
-    margin: 0 auto;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 
-  .promo-service-links {
-    grid-template-columns: 1fr;
-  }
 }
 </style>
 
