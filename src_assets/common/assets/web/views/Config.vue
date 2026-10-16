@@ -6,28 +6,23 @@
     <template #actions>
     <a class="btn btn-outline-secondary" href="/?setup=1">{{ $t('setup.rerun') }}</a>
     <div class="config-floating-buttons">
-      <button
-        type="button"
-        class="btn btn-primary"
-        :class="{ 'has-unsaved': hasUnsaved }"
+      <PageAction
+        primary icon="save"
+        :label="$t('_common.save')"
         @click="requestConfigAction('save')"
         :disabled="riskActionRunning || !hasUnsaved"
         :aria-label="$t('_common.save')"
         :title="hasUnsaved ? $t('config.unsaved_changes_tooltip') : $t('_common.save')"
-      >
-        <i class="fas fa-save me-2" aria-hidden="true"></i>{{ $t('_common.save') }}
-      </button>
-      <button
+      />
+      <PageAction
         v-if="saved && !restarted"
-        type="button"
-        class="btn btn-outline-primary"
+        icon="reload"
+        :label="$t('config.apply_restart')"
         @click="requestConfigAction('apply')"
         :disabled="riskActionRunning"
         :aria-label="$t('config.apply_restart')"
         :title="$t('config.apply_note')"
-      >
-        <i class="fas fa-rotate-right me-2" aria-hidden="true"></i>{{ $t('config.apply_restart') }}
-      </button>
+      />
       <div class="floating-toast-container" :class="{ 'has-validation-error': validationError }">
         <div v-if="validationError" class="toast text-bg-danger border-0 show" role="alert" aria-live="assertive">
           <div class="toast-body">
@@ -244,6 +239,7 @@
 
 <script setup>
 import PageHeader from '../components/common/PageHeader.vue'
+import PageAction from '@/components/PageAction.vue'
 import { ref, watch, onMounted, provide, computed, onUnmounted, nextTick, defineAsyncComponent } from 'vue'
 import Navbar from '../components/layout/Navbar.vue'
 import ConfirmDialog from '../components/common/ConfirmDialog.vue'
