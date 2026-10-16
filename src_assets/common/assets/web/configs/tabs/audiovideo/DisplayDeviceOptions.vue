@@ -359,15 +359,16 @@ onUnmounted(() => {
 
 .nested-setting {
   padding: 0.75rem;
-  border-left: 3px solid var(--ui-border-strong);
-  border-radius: 0 var(--ui-radius-sm) var(--ui-radius-sm) 0;
+
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-sm);
   background: var(--ui-surface-strong);
 }
 
 .hdr-feature-card {
   padding: 1rem;
   border: 1px solid var(--ui-border);
-  border-left: 3px solid var(--ui-accent);
+
   border-radius: var(--ui-radius-md);
   background: var(--ui-accent-soft);
   transition:
@@ -383,7 +384,7 @@ onUnmounted(() => {
 }
 
 .hdr-feature-card.is-disabled {
-  border-left-color: var(--ui-text-muted);
+
   background: var(--ui-surface);
   opacity: 0.78;
 }

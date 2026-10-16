@@ -34,9 +34,8 @@
 
     <div class="setup-card">
       <div class="setup-header">
-        <img src="/images/logo-sunshine-256.png" height="60" alt="Sunshine">
-        <h1>{{ $t('setup.welcome') }}</h1>
-        <p>{{ $t('setup.description') }}</p>
+        <div class="setup-brand"><img src="/images/logo-sunshine-256.png" height="48" alt=""><span>Foundation Sunshine Lite</span></div>
+        <h1>{{ shellT.setupLite.title }}</h1>
       </div>
 
       <div class="setup-content">
@@ -74,25 +73,11 @@
           <div v-if="currentStep === 1">
             <h3 class="mb-4">{{ $t('setup.step0_description') }}</h3>
             
-            <div class="option-card" 
-                 :class="{ selected: selectedLocale === 'zh' }"
-                 @click="selectedLocale = 'zh'">
-              <div class="option-icon">
-                <i class="fas fa-language"></i>
-              </div>
-              <h4>简体中文</h4>
-              <p>使用简体中文界面</p>
-            </div>
-
-            <div class="option-card" 
-                 :class="{ selected: selectedLocale === 'en' }"
-                 @click="selectedLocale = 'en'">
-              <div class="option-icon">
-                <i class="fas fa-language"></i>
-              </div>
-              <h4>English</h4>
-              <p>Use English interface</p>
-            </div>
+            <button v-for="language in wizardLocales" :key="language.value" type="button" class="option-card language-option"
+                    :class="{ selected: selectedLocale === language.value }" :aria-pressed="selectedLocale === language.value"
+                    @click="selectedLocale = language.value">
+              <i class="fas fa-language" aria-hidden="true"></i><span>{{ language.label }}</span>
+            </button>
           </div>
 
           <!-- 步骤 2: 选择显卡 -->
@@ -251,8 +236,17 @@
 
             </div>
           </div>
-        </div>
 
+          <div v-if="currentStep < 5" class="setup-skip-entry">
+            <button class="btn btn-setup btn-setup-skip"
+                    @click="skipWizard"
+                    :disabled="saving"
+                    type="button">
+              <i class="fas fa-forward"></i>
+              {{ $t('setup.skip') }}
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- 操作按钮（固定底栏） -->
@@ -264,16 +258,6 @@
             <i class="fas fa-arrow-left"></i>
             {{ $t('setup.previous') }}
           </button>
-          <button class="btn btn-setup btn-setup-skip" 
-                  @click="skipWizard" 
-                  v-if="currentStep < 5"
-                  :disabled="saving"
-                  type="button">
-            <i class="fas fa-forward"></i>
-            {{ $t('setup.skip') }}
-          </button>
-          <div v-else></div>
-
           <button class="btn btn-setup btn-setup-primary" 
                   @click="nextStep" 
                   v-if="currentStep < 5"
@@ -339,7 +323,8 @@ import { trackEvents } from '../config/firebase.js'
 import { apiFetch, apiJson } from '../utils/apiFetch.js'
 import { saveSetupWizardLocale } from '../services/setupWizardService.js'
 import { detectSystemLocale } from '../config/i18n.js'
-import { SETUP_WIZARD_LANGUAGE_SAVED_KEY } from '../composables/useSetupWizard.js'
+import { useI18n as useShellI18n } from '@/desktop/i18n/index.js'
+import { getWizardLocale, SETUP_WIZARD_LANGUAGE_SAVED_KEY } from '../composables/useSetupWizard.js'
 import { useVddStatus } from '../composables/useVddStatus.js'
 import ConfirmDialog from './common/ConfirmDialog.vue'
 
@@ -367,11 +352,8 @@ const COMPLETION_NOTICES = Object.freeze([
 
 const COMPLETION_NOTICE_DURATION_MS = 5000
 
-// 向导第一步只暴露 简体中文(zh) / English(en) 两个选项，
-// 因此把系统语言探测结果折叠到这两者之一即可
 function detectInitialWizardLocale() {
-  const sys = detectSystemLocale() // 已经过支持白名单过滤，未知语言落到 'en'
-  return (sys === 'zh' || sys === 'zh_TW') ? 'zh' : 'en'
+  return getWizardLocale(detectSystemLocale())
 }
 
 function isPhysicalDisplay(device) {
@@ -408,7 +390,7 @@ export default {
     return {
       currentStep: 1,
       // 已有 locale 时向导会跳过第一步，不预置，避免 saveConfiguration() 覆盖已有设置（如 de / ja）
-      // 首次进入向导时依然按系统 / 浏览器语言预选 zh / en
+      // 首次进入向导时保留繁体中文、简体中文或英语预选。
       selectedLocale: this.hasLocale ? null : detectInitialWizardLocale(),
       selectedDisplay: 'ZakoHDR', // 默认选择基地显示器
       selectedAdapter: '',
@@ -425,7 +407,12 @@ export default {
     }
   },
   setup() {
-    return { ...useVddStatus() }
+    const { t: shellT } = useShellI18n()
+    return { ...useVddStatus(), shellT, wizardLocales: [
+      { value: 'zh_TW', label: '繁體中文' },
+      { value: 'zh', label: '简体中文' },
+      { value: 'en', label: 'English' },
+    ] }
   },
   mounted() {
     // 记录进入设置向导
@@ -829,6 +816,11 @@ export default {
   border-bottom: 1px solid var(--ui-border);
 }
 
+.setup-brand { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:12px; font-size:18px; font-weight:600; }
+.language-option { width:100%; display:flex; align-items:center; gap:16px; text-align:left; color:var(--ui-text-primary); font:inherit; }
+.language-option i { font-size:24px; color:var(--ui-accent); }
+.setup-skip-entry { margin-top:24px; }
+.action-buttons > .btn-setup-primary { margin-left:auto; }
 .setup-header img {
   filter: drop-shadow(0 6px 14px rgba(var(--ui-accent-rgb), 0.18));
 }
@@ -1140,7 +1132,7 @@ export default {
   background: var(--ui-accent-soft);
   padding: 0.8em 1em;
   border-radius: 8px;
-  border-left: 3px solid var(--ui-accent);
+  border: 1px solid var(--ui-border);
   font-size: 0.9em;
   line-height: 1.5;
   color: var(--ui-text-secondary);

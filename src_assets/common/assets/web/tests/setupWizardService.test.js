@@ -23,7 +23,7 @@ test('setup wizard language save preserves the current configuration', async () 
   }
 
   try {
-    const response = await saveSetupWizardLocale('zh')
+    const response = await saveSetupWizardLocale('zh_TW')
 
     assert.equal(response.ok, true)
     assert.equal(requests.length, 2)
@@ -33,7 +33,7 @@ test('setup wizard language save preserves the current configuration', async () 
     assert.equal(requests[1].options.method, 'POST')
     assert.equal(requests[1].options.headers.get('Content-Type'), 'application/json')
     assert.deepEqual(JSON.parse(requests[1].options.body), {
-      locale: 'zh',
+      locale: 'zh_TW',
       output_name: 'ZakoHDR',
       port: 40989,
       setup_wizard_completed: false,

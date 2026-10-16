@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   SETUP_WIZARD_LANGUAGE_SAVED_KEY,
   useSetupWizard,
+  getWizardLocale,
 } from '../composables/useSetupWizard.js'
 
 test('explicitly rerunning setup preserves the saved completion marker', () => {
@@ -99,4 +100,11 @@ test('setup wizard clears language reload marker after completion', () => {
   }), false)
 
   assert.equal(storage.has(SETUP_WIZARD_LANGUAGE_SAVED_KEY), false)
+})
+
+test('wizard preserves Traditional Chinese when choosing the initial language', () => {
+  assert.equal(getWizardLocale('zh_TW'), 'zh_TW')
+  assert.equal(getWizardLocale('zh'), 'zh')
+  assert.equal(getWizardLocale('en'), 'en')
+  assert.equal(getWizardLocale('ja'), 'en')
 })

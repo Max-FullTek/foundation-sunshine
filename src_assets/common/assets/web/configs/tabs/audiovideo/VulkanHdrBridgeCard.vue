@@ -205,7 +205,7 @@ onUnmounted(() => {
 .vulkan-hdr-card {
   padding: 1rem;
   border: 1px solid var(--ui-border);
-  border-left: 3px solid var(--ui-accent);
+
   border-radius: var(--ui-radius-md);
   background: var(--ui-accent-soft);
   transition:
@@ -221,7 +221,7 @@ onUnmounted(() => {
 }
 
 .vulkan-hdr-card.is-disabled {
-  border-left-color: var(--ui-text-muted);
+
   background: var(--ui-surface);
   opacity: 0.78;
 }

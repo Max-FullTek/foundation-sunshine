@@ -2,6 +2,10 @@ import { ref } from 'vue'
 
 export const SETUP_WIZARD_LANGUAGE_SAVED_KEY = 'sunshine_setup_wizard_language_saved'
 
+export function getWizardLocale(locale) {
+  return ['zh_TW', 'zh'].includes(locale) ? locale : 'en'
+}
+
 function isTrue(value) {
   return value === true || value === 'true'
 }

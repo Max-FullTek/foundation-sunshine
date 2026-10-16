@@ -15,8 +15,7 @@
         </template>
       </PageHeader>
       <section class="apps-guide mb-4">
-        <h2>{{ shellT.appsGuide.title }}</h2>
-        <p>{{ shellT.appsGuide.body }}</p>
+        <p>{{ shellT.appsGuide.body }} {{ shellT.appsGuide.restorePrefix }} <button class="restore-inline" type="button" :disabled="isSaving" @click="restoreDefaultApps">{{ shellT.appsGuide.restoreLabel }}</button> {{ shellT.appsGuide.restoreSuffix }}</p>
       </section>
       <div class="apps-grid-container">
         <draggable v-if="!searchQuery" v-model="apps" :item-key="getAppRenderKey" class="apps-grid" handle=".drag-handle" :disabled="isSaving" :delay="180" :delay-on-touch-only="true" :touch-start-threshold="8" :fallback-tolerance="8" ghost-class="app-card-ghost" @start="onDragStart" @end="onDragEnd">
@@ -34,13 +33,6 @@
         <div v-if="!filteredAppsWithIndex.length" class="empty-state" role="status"><p>{{ $t(searchQuery ? 'apps.scan_result_no_matches' : 'apps.no_apps') }}</p></div>
       </div>
       <div v-if="message" class="alert app-status mt-3" :class="messageClass" role="status">{{ message }}</div>
-      <section class="apps-restore apps-guide mt-4">
-        <div>
-          <h2>{{ shellT.appsGuide.restoreLabel }}</h2>
-          <p>{{ shellT.appsGuide.restore }}</p>
-        </div>
-        <button class="btn btn-outline-secondary" type="button" :disabled="isSaving" @click="restoreDefaultApps">{{ shellT.appsGuide.restoreLabel }}</button>
-      </section>
       <AppEditor v-if="editingApp" :app="editingApp" :platform="platform" :disabled="isSaving" @save-app="handleSaveApp" @close="closeAppEditor" />
       <ConfirmDialog :show="deleteConfirmIndex !== null" dialog-id="delete-app-confirm" :title="$t('_common.delete')" :close-label="$t('_common.cancel')" @close="cancelDeleteApp">
         <p>{{ apps[deleteConfirmIndex]?.name }}</p>
@@ -87,12 +79,11 @@ watch(searchQuery, () => debouncedSearch.value?.())
 .apps-heading-search .search-input { padding:8px 32px 8px 38px; font-size:14px; }
 .apps-heading-search .search-icon { left:10px; width:20px; height:20px; font-size:14px; }
 .apps-heading-search .btn-clear-search { right:6px; }
-.apps-guide { padding:24px; background:var(--ui-surface-strong); border:1px solid var(--ui-border); border-radius:var(--ui-radius-lg); }
-.apps-guide h2 { font-size:19px; margin:0 0 18px; font-weight:600; color:var(--ui-text-primary); }
-.apps-guide p { font-size:14px; line-height:1.9; margin:0; color:var(--ui-text-secondary); }
-.apps-restore { display:flex; flex-wrap:wrap; align-items:center; gap:20px; }
-.apps-restore > div { flex:1; min-width:min(100%, 300px); }
-.apps-restore .btn { flex-shrink:0; }
+.apps-guide { padding:24px; background:var(--fd-bg-secondary); border:1px solid rgba(var(--fd-text-primary-rgb), .16); border-radius:var(--ui-radius-lg); font-family:'Segoe UI', 'Microsoft YaHei', sans-serif; }
+.apps-guide p { font-size:14px; line-height:1.9; margin:0; color:var(--fd-text-secondary); }
+.restore-inline { display:inline; padding:0; border:0; background:none; color:var(--fd-accent); font:inherit; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+.restore-inline:hover { color:var(--fd-text-primary); }
+.restore-inline:disabled { opacity:.5; cursor:default; }
 @media (max-width:600px) { .apps-page .apps-heading-search .search-box { width:min(240px, 55vw); } }
 .app-status.alert { background:var(--ui-surface-strong); border-radius:var(--ui-radius-md); box-shadow:var(--ui-shadow-sm); }
 .app-status.alert-error { color:var(--ui-danger-text); border-color:var(--ui-danger-border); }

@@ -650,14 +650,14 @@ onUnmounted(() => {
     }
 
     .settings-panel--accent {
-      border-left: 3px solid var(--ui-accent);
+
       background: color-mix(in srgb, var(--ui-accent) 5%, var(--ui-surface));
     }
 
     .settings-subpanel {
       padding: 0.8rem;
       border: 1px solid var(--ui-border);
-      border-left: 3px solid var(--ui-border-strong);
+
       border-radius: var(--ui-radius-sm);
       background: var(--ui-surface-strong);
     }

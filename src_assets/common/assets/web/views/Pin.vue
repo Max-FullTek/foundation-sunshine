@@ -513,7 +513,7 @@ watch(clients, initTooltips, { deep: true })
     padding: 0.7rem 0.85rem;
     color: var(--ui-text-secondary);
     background: color-mix(in srgb, var(--ui-accent) 8%, transparent);
-    border-left: 3px solid var(--ui-accent);
+
     border-radius: var(--ui-radius-sm, 6px);
     font-size: 0.875rem;
     line-height: 1.45;
