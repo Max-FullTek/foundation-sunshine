@@ -113,3 +113,6 @@ tools/sunshine-ds5-sidecar/obj/
 tools/hidmaestro-core-patch/**/bin/
 tools/hidmaestro-core-patch/**/obj/
 .claude/
+
+# Project-local toolchains, caches and build outputs
+/.local/
