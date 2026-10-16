@@ -235,6 +235,14 @@ namespace platf::audio {
 
   template <class T>
   void
+  Release(T *p) {
+    if (p) {
+      p->Release();
+    }
+  }
+
+  template <class T>
+  void
   co_task_free(T *p) {
     CoTaskMemFree((LPVOID) p);
   }
@@ -760,7 +768,6 @@ namespace platf::audio {
     HANDLE mmcss_task_handle = NULL;
   };
 
-  // 初始化、写入和释放操作都由麦克风接收线程串行执行。
   class audio_control_t: public ::platf::audio_control_t {
   public:
     std::optional<sink_t>
