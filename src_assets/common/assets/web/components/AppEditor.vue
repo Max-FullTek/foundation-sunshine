@@ -348,10 +348,6 @@
           </form>
         </div>
         <div class="modal-footer modal-footer-enhanced">
-          <div class="save-status">
-            <span v-if="isFormValid" class="text-success"> <i class="fas fa-check-circle me-1"></i>{{ t('apps.form_valid') }} </span>
-            <span v-else class="text-warning"> <i class="fas fa-exclamation-triangle me-1"></i>{{ t('apps.form_invalid') }} </span>
-          </div>
           <div>
             <button type="button" class="btn btn-secondary me-2" @click="closeModal">
               <i class="fas fa-times me-1"></i>{{ t('_common.cancel') }}
@@ -530,10 +526,10 @@ const initializeForm = (app) => {
   formData.value = { ...DEFAULT_FORM_DATA, ...deepClone(app) }
   ensureDefaultValues()
   validation.value = {}
-  // 立即验证所有字段，确保表单状态正确
+  // Validate existing values without showing errors on an untouched new form.
   nextTick(() => {
-    // 验证必填字段 name（总是验证）
-    validateField('name')
+    // Empty names keep Save disabled until the user enters a value.
+    if (formData.value.name?.trim()) validateField('name')
     // 验证 cmd 字段（如果有值则验证，没有值则标记为有效）
     if (formData.value.cmd && formData.value.cmd.trim()) {
       validateField('cmd')
@@ -751,15 +747,10 @@ onBeforeUnmount(cleanup)
   border-top: 1px solid var(--ui-border);
   padding: 1rem 1.5rem;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   
   background: var(--ui-surface);
-}
-
-.save-status {
-  font-size: 0.875rem;
-  color: var(--ui-text-muted);
 }
 
 .is-invalid {

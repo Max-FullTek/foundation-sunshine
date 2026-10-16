@@ -6,8 +6,8 @@
           <i class="fas fa-file-alt me-2"></i>
           {{ $t('troubleshooting.logs') }}
         </h5>
-        <div class="d-flex align-items-center gap-2">
-          <div class="input-group" style="width: 480px">
+        <div class="d-flex flex-wrap align-items-center gap-2 logs-actions">
+          <div class="input-group logs-filter">
             <span class="input-group-text">
               <i class="fas fa-search text-muted"></i>
             </span>
@@ -15,6 +15,7 @@
               type="text"
               class="form-control"
               v-model="logFilterModel"
+              :aria-label="$t('troubleshooting.logs_find')"
               :placeholder="$t('troubleshooting.logs_find')"
             />
             <input type="checkbox" class="btn-check" id="ignoreCase" v-model="ignoreCaseModel" />
@@ -204,6 +205,9 @@ const handleDevTap = () => {
 </script>
 
 <style scoped>
+.logs-actions { min-width: 0; max-width: 100%; }
+.logs-filter { width: 480px; max-width: 100%; }
+
 .input-group .btn {
   border-radius: 0;
   padding: 0.375rem 0.5rem;

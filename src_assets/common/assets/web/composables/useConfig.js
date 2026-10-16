@@ -29,6 +29,7 @@ const DEFAULT_TABS = [
       locale: 'en',
       sunshine_name: '',
       min_log_level: 2,
+      sleep_mode: 0,
       global_prep_cmd: '[]',
       stop_on_last_video_session: 'disabled',
     },

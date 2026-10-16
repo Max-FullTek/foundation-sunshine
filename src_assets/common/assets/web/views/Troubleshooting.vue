@@ -9,6 +9,15 @@
         </h1>
       </div>
 
+      <LogsSection
+        v-model:logFilter="logFilter"
+        v-model:matchMode="matchMode"
+        v-model:ignoreCase="ignoreCase"
+        :actualLogs="actualLogs"
+        :copyLogs="copyLogs"
+        :copyConfig="handleCopyConfig"
+      />
+
       <!-- Row 1: 重新打开新手引导 | 登出 -->
       <div class="row mb-4">
         <div class="col-lg-6 d-flex">
@@ -70,7 +79,7 @@
         <div class="col-lg-6 d-flex">
           <TroubleshootingCard
             class="flex-fill"
-            icon="fa-bomb"
+            icon="fa-stop-circle"
             color="danger"
             :title="$t('troubleshooting.boom_sunshine')"
             :description="$t('troubleshooting.boom_sunshine_desc')"
@@ -82,7 +91,7 @@
               </div>
             </template>
             <button class="btn btn-danger" :disabled="boomPressed" @click="showBoomModal">
-              <i class="fas fa-bomb me-2"></i>
+              <i class="fas fa-stop-circle me-2"></i>
               {{ $t('troubleshooting.boom_sunshine') }}
             </button>
           </TroubleshootingCard>
@@ -142,22 +151,13 @@
         </div>
       </div>
 
-      <!-- Logs Section - Full Width -->
-      <LogsSection
-        v-model:logFilter="logFilter"
-        v-model:matchMode="matchMode"
-        v-model:ignoreCase="ignoreCase"
-        :actualLogs="actualLogs"
-        :copyLogs="copyLogs"
-        :copyConfig="handleCopyConfig"
-      />
     </div>
 
     <ConfirmDialog
       :show="showBoomConfirmModal"
       dialog-id="boom-confirm"
       :title="$t('troubleshooting.confirm_boom')"
-      title-icon="fas fa-bomb"
+      title-icon="fas fa-stop-circle"
       tone="danger"
       :close-label="$t('_common.close')"
       @close="closeBoomModal"

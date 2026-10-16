@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { resetBootstrapDataCache } from '../config/bootstrapData.js'
 
 import {
   filterValidFps,
@@ -10,6 +11,21 @@ import {
   serializeResolutions,
   useConfig,
 } from '../composables/useConfig.js'
+
+test('missing sleep mode uses the host default and explicit mode is preserved', async (t) => {
+  let hostConfig = { platform: 'windows' }
+  t.mock.method(globalThis, 'fetch', async () => Response.json(hostConfig))
+  t.after(resetBootstrapDataCache)
+  for (const mode of [undefined, 0, 1, 2]) {
+    resetBootstrapDataCache()
+    hostConfig = { platform: 'windows', ...(mode === undefined ? {} : { sleep_mode: mode }) }
+    const state = useConfig()
+    state.initTabs()
+    await state.loadConfig()
+    assert.equal(state.config.value.sleep_mode, mode ?? 0)
+    assert.equal(state.hasUnsavedChanges(), false)
+  }
+})
 
 test('resolution config round-trips Sunshine bracket syntax', () => {
   const parsed = parseResolutions('[1280x720,1920x1080]')

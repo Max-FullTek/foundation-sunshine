@@ -70,6 +70,8 @@
           <input
             type="text"
             pattern="\d*"
+            inputmode="numeric"
+            :aria-label="$t('navbar.pin')"
             :placeholder="`${$t('navbar.pin')}`"
             autofocus
             id="pin-input"
@@ -79,6 +81,7 @@
           <input
             type="text"
             v-model="pairingDeviceName"
+            :aria-label="$t('pin.device_name')"
             :placeholder="`${$t('pin.device_name')}`"
             id="name-input"
             class="form-control my-4"
