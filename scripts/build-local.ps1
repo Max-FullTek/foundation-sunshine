@@ -50,9 +50,9 @@ cmake -S . -B .local/build/sunshine -G Ninja \
   -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 '@
     Build = 'cmake --build .local/build/sunshine --target sunshine --parallel "$FOUNDATION_JOBS"; ccache --show-stats'
-    # The aggregate suite starts live host audio capture. Leave that to CI;
-    # local defaults run the isolated test executables without media capture.
-    Test = 'cmake --build .local/build/sunshine --parallel "$FOUNDATION_JOBS"; ctest --test-dir .local/build/sunshine --output-on-failure --parallel "$FOUNDATION_JOBS" -E "^test_sunshine$"'
+    # Keep live capture and network listeners in CI. Even loopback test servers
+    # can trigger Windows firewall prompts on the user's normal workstation.
+    Test = 'cmake --build .local/build/sunshine --parallel "$FOUNDATION_JOBS"; ctest --test-dir .local/build/sunshine --output-on-failure --parallel "$FOUNDATION_JOBS" -E "^(test_sunshine|beast_http_unit_tests|webhook_transport_tests|controller_handoff_probe)$"'
     WebUI = @'
 export PATH="$(cygpath -u "$FOUNDATION_NODE"):$PATH"
 export npm_config_cache="$(cygpath -m "$FOUNDATION_ROOT")/.local/cache/npm"
