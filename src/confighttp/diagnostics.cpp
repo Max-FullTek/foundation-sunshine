@@ -12,6 +12,7 @@
 #include "src/entry_handler.h"
 #include "src/file_handler.h"
 #include "src/logging.h"
+#include "src/platform/common.h"
 #include "src/rtsp.h"
 #include <algorithm>
 #include <atomic>
@@ -297,6 +298,58 @@ namespace confighttp::diagnostics {
       display_device::session_t::get().reset_persistence();
       outputTree.put("status", true);
     }
+
+#ifdef _WIN32
+    void
+    getVddStatus(resp_https_t response, req_https_t request) {
+      if (!authenticate(response, request)) return;
+
+      const auto status = display_device::vdd_utils::get_vdd_status();
+      send_response(response, nlohmann::json {
+                                { "status", true },
+                                { "state", status.state },
+                                { "installed", status.installed },
+                                { "running", status.running },
+                                { "control_available", status.control_available },
+                                { "monitor_active", status.monitor_active },
+                                { "problem_code_valid", status.problem_code_valid },
+                                { "problem_code", status.problem_code },
+                                { "version_supported", false },
+                              });
+    }
+#endif
+
+#ifdef _WIN32
+    void
+    writeVulkanHdrBridgeStatus(resp_https_t response, bool operation_status) {
+      const auto bridge_status = platf::vulkan_hdr_bridge::status();
+      nlohmann::json output {
+        { "status", operation_status },
+        { "state", bridge_status.state },
+        { "message", bridge_status.message },
+        { "registered", bridge_status.registered },
+        { "artifacts_installed", bridge_status.artifacts_installed },
+        { "display_available", bridge_status.display_available },
+      };
+      send_response(std::move(response), output);
+    }
+#endif
+
+#ifdef _WIN32
+    void
+    getVulkanHdrBridgeStatus(resp_https_t response, req_https_t request) {
+      if (!authenticate(response, request)) return;
+      writeVulkanHdrBridgeStatus(response, true);
+    }
+#endif
+
+#ifdef _WIN32
+    void
+    validateVulkanHdrBridge(resp_https_t response, req_https_t request) {
+      if (!authenticate(response, request)) return;
+      writeVulkanHdrBridgeStatus(response, platf::vulkan_hdr_bridge::validate_now());
+    }
+#endif
 
   }  // namespace
 
