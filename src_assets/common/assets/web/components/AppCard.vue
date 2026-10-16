@@ -53,6 +53,9 @@
       <div class="app-actions">
         <button 
           class="btn btn-edit" 
+          type="button"
+          :disabled="disabled"
+          :aria-label="$t('apps.edit')"
           @click="$emit('edit')"
           :title="$t('apps.edit')"
         >
@@ -60,6 +63,9 @@
         </button>
         <button 
           class="btn btn-delete" 
+          type="button"
+          :disabled="disabled"
+          :aria-label="$t('_common.delete')"
           @click="$emit('delete')"
           :title="$t('apps.delete')"
         >
@@ -86,6 +92,7 @@ import { getImagePreviewUrl } from '../utils/imageUtils.js';
 export default {
   name: 'AppCard',
   props: {
+    disabled: { type: Boolean, default: false },
     app: {
       type: Object,
       required: true
