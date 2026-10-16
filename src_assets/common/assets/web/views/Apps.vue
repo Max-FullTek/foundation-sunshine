@@ -2,7 +2,7 @@
   <div class="apps-page">
     <Navbar />
     <main class="container-fluid">
-      <PageHeader :title="$t('apps.applications_title')" icon="fas fa-gamepad">
+      <PageHeader page="apps">
         <template #actions>
           <button class="btn btn-primary" type="button" @click="newApp">{{ $t('apps.add_new') }}</button>
           <button class="btn btn-outline-secondary" type="button" :disabled="isSaving" @click="restoreDefaultApps">{{ $t('apps.restore_default_apps') }}</button>

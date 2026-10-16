@@ -2,7 +2,7 @@
   <div class="pin-page">
     <Navbar />
     <div id="content" class="container">
-      <PageHeader :title="$t('pin.pin_pairing')" icon="fas fa-link" />
+      <PageHeader page="pairing" />
 
       <!-- QR Code Pairing -->
       <div class="card mb-4 qr-pair-card">

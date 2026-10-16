@@ -313,6 +313,7 @@
     "working_dir_desc": "传递给进程的工作目录。某些应用使用工作目录搜索配置文件。未设置时默认使用命令的父目录。"
   },
   "config": {
+    "apply_restart": "应用并重启",
     "adapter_name": "适配器名称",
     "adapter_name_desc_linux_1": "手动指定用于捕获的 GPU。",
     "adapter_name_desc_linux_2": "找到所有能够使用 VAAPI 的设备",
