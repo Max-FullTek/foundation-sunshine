@@ -1,7 +1,5 @@
 <script setup>
 import { ref } from 'vue'
-import { useI18n as useShellI18n } from '@/desktop/i18n/index.js'
-const { t: shellT } = useShellI18n()
 import Checkbox from '../../components/Checkbox.vue'
 import CommandTable from '../../components/CommandTable.vue'
 
@@ -40,30 +38,6 @@ function handleCommandOrderChanged(newOrder) {
 <template>
   <div id="general" class="config-page">
     <div class="settings-grid">
-      <!-- Locale -->
-      <div class="settings-field">
-        <label for="locale" class="form-label">{{ $t('config.locale') }}</label>
-        <select id="locale" class="form-select" v-model="config.locale">
-          <option value="bg">Български (Bulgarian)</option>
-          <option value="cs">Čeština (Czech)</option>
-          <option value="de">Deutsch (German)</option>
-          <option value="en">English</option>
-          <option value="en_GB">English, UK</option>
-          <option value="en_US">English, US</option>
-          <option value="es">Español (Spanish)</option>
-          <option value="fr">Français (French)</option>
-          <option value="it">Italiano (Italian)</option>
-          <option value="ja">日本語 (Japanese)</option>
-          <option value="pt">Português (Portuguese)</option>
-          <option value="ru">Русский (Russian)</option>
-          <option value="sv">svenska (Swedish)</option>
-          <option value="tr">Türkçe (Turkish)</option>
-          <option value="zh">简体中文 (Chinese Simplified)</option>
-          <option value="zh_TW">繁體中文 (Chinese Traditional)</option>
-        </select>
-        <div class="form-text">{{ shellT.localeHelp.host }}</div>
-      </div>
-
       <!-- Sunshine Name -->
       <div class="settings-field">
         <label for="sunshine_name" class="form-label">{{ $t('config.sunshine_name') }}</label>

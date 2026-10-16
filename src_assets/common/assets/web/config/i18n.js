@@ -1,3 +1,4 @@
+import { readInterfaceLocale } from '@/shared/locale.js'
 import {createI18n} from "vue-i18n";
 import { getBootstrapConfig, getBootstrapLocale } from './bootstrapData.js'
 
@@ -58,6 +59,8 @@ export default async function() {
         locale = detectSystemLocale();
     }
     
+    locale = readInterfaceLocale(window.localStorage) || locale;
+
     // html[lang] 用 BCP-47 连字符形式，让 辅助技术 / 翻译插件 能正确识别 en_US -> en-US, zh_TW -> zh-TW
     document.querySelector('html').setAttribute('lang', locale.replace(/_/g, '-'));
     let messages = {

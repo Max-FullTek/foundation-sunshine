@@ -323,6 +323,7 @@ import { trackEvents } from '../config/firebase.js'
 import { apiFetch, apiJson } from '../utils/apiFetch.js'
 import { saveSetupWizardLocale } from '../services/setupWizardService.js'
 import { detectSystemLocale } from '../config/i18n.js'
+import { writeInterfaceLocale } from '@/shared/locale.js'
 import { useI18n as useShellI18n } from '@/desktop/i18n/index.js'
 import { getWizardLocale, SETUP_WIZARD_LANGUAGE_SAVED_KEY } from '../composables/useSetupWizard.js'
 import { useVddStatus } from '../composables/useVddStatus.js'
@@ -529,6 +530,7 @@ export default {
         if (!response.ok) {
           throw new Error(`Failed to save language: HTTP ${response.status}`)
         }
+        writeInterfaceLocale(window.localStorage, this.selectedLocale)
         markLanguageSavedForReload()
         // 重新加载页面以应用新语言
         window.location.reload()
