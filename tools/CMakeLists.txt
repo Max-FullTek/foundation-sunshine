@@ -82,32 +82,6 @@ if(WIN32)
             sunshine_project_options)
     target_compile_options(vdd-frame-channel-probe PRIVATE ${SUNSHINE_COMPILE_OPTIONS})
 
-    add_executable(vtouch-poc
-            vtouch_poc.cpp
-            "${CMAKE_SOURCE_DIR}/src/remote_usb/loopback_usbip_bridge.cpp"
-            "${CMAKE_SOURCE_DIR}/src/remote_usb/virtual_touchscreen_device.cpp")
-    set_target_properties(vtouch-poc PROPERTIES
-            CXX_STANDARD 23
-            CXX_STANDARD_REQUIRED ON)
-    target_include_directories(vtouch-poc PRIVATE
-            "${CMAKE_SOURCE_DIR}")
-    target_link_libraries(vtouch-poc
-            PRIVATE Boost::asio
-            Boost::system
-            shell32
-            ole32
-            user32
-            advapi32
-            ws2_32
-            mswsock
-            OpenSSL::Crypto
-            sunshine_project_options sunshine_crypto)
-    target_compile_options(vtouch-poc PRIVATE
-            $<$<COMPILE_LANGUAGE:CXX>:${SUNSHINE_COMPILE_OPTIONS}>)
-    if(MINGW)
-        target_link_options(vtouch-poc PRIVATE -municode)
-    endif()
-
     add_custom_target(check-vdd-ioctl-abi
             COMMAND powershell -NoProfile -ExecutionPolicy Bypass
                     -File "${CMAKE_CURRENT_SOURCE_DIR}/check_vdd_ioctl_abi.ps1"
