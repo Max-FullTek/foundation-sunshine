@@ -90,7 +90,7 @@ html[data-sunshine-navigation='shared'] .sidebar-wrapper { background:transparen
 .sidebar-wrapper .main-content { background:transparent !important; }
 .sidebar-wrapper .page-content { scrollbar-gutter:stable; }
 .sidebar-wrapper .page-config, .sidebar-wrapper .pin-page, .sidebar-wrapper .apps-page { min-height:0; background:transparent; }
-.sidebar-wrapper .page-config > .container, .sidebar-wrapper .pin-page > .container, .sidebar-wrapper .apps-page > .container-fluid { padding-top:52px !important; }
+.sidebar-wrapper .page-config > .container, .sidebar-wrapper .pin-page > .container, .sidebar-wrapper .apps-page > .container-fluid { padding-top:0 !important; }
 .sidebar-wrapper .page-config > .config-content-container { padding-top:0 !important; }
 .sidebar-wrapper .page-heading { padding-top:0; }
 </style>
