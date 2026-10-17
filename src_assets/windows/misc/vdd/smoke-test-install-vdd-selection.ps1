@@ -1,6 +1,7 @@
 param(
     [string]$InstallScript = (Join-Path $PSScriptRoot 'install-vdd.bat'),
-    [string]$HelperScript = (Join-Path $PSScriptRoot 'vdd-device-helper.ps1')
+    [string]$HelperScript = (Join-Path $PSScriptRoot 'vdd-device-helper.ps1'),
+    [switch]$KeepTestArtifacts
 )
 
 $ErrorActionPreference = 'Stop'
@@ -186,7 +187,8 @@ try {
     Write-Host "All VDD payload selection smoke tests passed."
 }
 finally {
-    if (Test-Path $tempRoot) {
+    if (-not $KeepTestArtifacts -and (Test-Path $tempRoot)) {
         Remove-Item -Path $tempRoot -Recurse -Force
     }
+    if ($KeepTestArtifacts) { Write-Output "Test artifacts: $tempRoot" }
 }

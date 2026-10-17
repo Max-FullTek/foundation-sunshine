@@ -15,6 +15,8 @@
 #                             (default: AlkaidLab/zako-vmouse-release)
 #   VDD_DRIVER_VERSION      — ZakoVDD release tag (e.g. v0.1.4)
 #   VDD_WIN10_DRIVER_VERSION — Win10-pinned ZakoVDD release tag
+#   VDD_DRIVER_SHA256 / VDD_WIN10_DRIVER_SHA256 — required for custom archives;
+#                             known pinned versions use their built-in digest
 #   NEFCON_VERSION          — nefcon release tag (e.g. v1.10.0)
 #   NEFCON_SHA256           — expected SHA-256 for a custom nefcon release;
 #                             known pinned versions use their built-in digest
@@ -44,6 +46,11 @@ set(VDD_DRIVER_VERSION "v0.17.5" CACHE STRING "ZakoVDD driver version tag")
 set(VDD_WIN10_DRIVER_VERSION "v0.15.10" CACHE STRING "Win10-pinned ZakoVDD driver version tag")
 set(VDD_DRIVER_ASSET_NAME "zakovdd.zip" CACHE STRING "Latest ZakoVDD release asset name")
 set(VDD_WIN10_DRIVER_ASSET_NAME "zakovdd.zip" CACHE STRING "Win10-pinned ZakoVDD release asset name")
+set(VDD_DRIVER_SHA256 "" CACHE STRING "SHA256 required for a custom ZakoVDD release archive")
+set(VDD_WIN10_DRIVER_SHA256 "" CACHE STRING "SHA256 required for a custom Win10 ZakoVDD release archive")
+# GitHub release asset digests, independently matched against downloaded bytes.
+set(_VDD_SHA256_V0_17_5 "e4177a0c03cb0778e0cf963f552f02c295ab855e0600083f9413446b8c238f6f")
+set(_VDD_SHA256_V0_15_10 "b73331f1f319478e4718a03beee76c52883df0f90978f4ff100b15ae36fd0a46")
 set(NEFCON_VERSION "v1.18.74" CACHE STRING "nefcon version tag")
 set(NEFCON_SHA256 "" CACHE STRING "SHA256 of a custom nefcon release archive")
 set(_NEFCON_SHA256_V1_18_74 "625abcdea9e84577d094ab65a8542c9977eb50f2371d216961af01cf4901f172")
@@ -318,6 +325,14 @@ function(_fetch_vmouse)
   # Only retain a complete, digest-verified set. File presence plus the source
   # marker is not sufficient proof after metadata or cache files are removed.
   if(_all_verified)
+    execute_process(
+      COMMAND powershell.exe -NoProfile -ExecutionPolicy Bypass -File
+        "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../../src_assets/windows/misc/verify-driver-certificate.ps1"
+        -Driver VirtualMouse -Directory "${VMOUSE_DRIVER_DIR}"
+      RESULT_VARIABLE _certificate_result)
+    if(NOT _certificate_result EQUAL 0)
+      message(FATAL_ERROR "Virtual mouse certificate/catalog verification failed")
+    endif()
     file(WRITE "${_marker}" "${_expected_marker}\n")
   else()
     file(REMOVE_RECURSE "${VMOUSE_DRIVER_DIR}")
@@ -327,14 +342,32 @@ endfunction()
 # ---------------------------------------------------------------------------
 # ZakoVDD  (single zip release asset)
 # ---------------------------------------------------------------------------
-function(_fetch_vdd_release variant_label version asset_name output_dir cache_prefix)
+function(_fetch_vdd_release variant_label version asset_name output_dir cache_prefix custom_sha256)
   message(STATUS "Fetching ZakoVDD ${variant_label} ${version} ...")
+  if(version STREQUAL "v0.17.5" AND asset_name STREQUAL "zakovdd.zip")
+    set(_expected_sha256 "${_VDD_SHA256_V0_17_5}")
+  elseif(version STREQUAL "v0.15.10" AND asset_name STREQUAL "zakovdd.zip")
+    set(_expected_sha256 "${_VDD_SHA256_V0_15_10}")
+  else()
+    string(LENGTH "${custom_sha256}" _hash_length)
+    if(NOT _hash_length EQUAL 64 OR NOT custom_sha256 MATCHES "^[0-9a-fA-F]+$" OR
+        custom_sha256 STREQUAL _VDD_SHA256_V0_17_5 OR
+        custom_sha256 STREQUAL _VDD_SHA256_V0_15_10)
+      message(FATAL_ERROR "A matching SHA256 must be explicitly supplied for custom ZakoVDD ${variant_label} ${version}/${asset_name}")
+    endif()
+    string(TOLOWER "${custom_sha256}" _expected_sha256)
+  endif()
   set(_zip_url "https://github.com/${_VDD_REPO}/releases/download/${version}/${asset_name}")
   set(_zip "${DRIVER_DEPS_CACHE}/${cache_prefix}-${version}.zip")
   set(_version_marker "${output_dir}/.release-version")
-  set(_expected_marker "${version}|${asset_name}")
+  set(_expected_marker "${version}|${asset_name}|${_expected_sha256}")
 
-  _driver_download("${_zip_url}" "${_zip}")
+  _driver_download("${_zip_url}" "${_zip}" "${_expected_sha256}")
+
+  # Never let an old extracted payload satisfy packaging after a failed download.
+  if(NOT EXISTS "${_zip}")
+    return()
+  endif()
 
   if(EXISTS "${_zip}")
     set(_needs_extract FALSE)
@@ -354,15 +387,24 @@ function(_fetch_vdd_release variant_label version asset_name output_dir cache_pr
   if(_needs_extract)
     file(REMOVE_RECURSE "${output_dir}")
     file(MAKE_DIRECTORY "${output_dir}")
-    file(ARCHIVE_EXTRACT INPUT "${_zip}" DESTINATION "${output_dir}")
-    file(WRITE "${_version_marker}" "${_expected_marker}\n")
-    message(STATUS "  Extracted ${variant_label} VDD driver to ${output_dir}")
+  endif()
+  # Restore all archived bytes even when the version marker matches; a modified
+  # extracted cache must not bypass the verified archive on a later configure.
+  file(ARCHIVE_EXTRACT INPUT "${_zip}" DESTINATION "${output_dir}")
+  file(WRITE "${_version_marker}" "${_expected_marker}\n")
+  execute_process(
+    COMMAND powershell.exe -NoProfile -ExecutionPolicy Bypass -File
+      "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../../src_assets/windows/misc/verify-driver-certificate.ps1"
+      -Driver VDD -Directory "${output_dir}"
+    RESULT_VARIABLE _certificate_result)
+  if(NOT _certificate_result EQUAL 0)
+    message(FATAL_ERROR "ZakoVDD ${variant_label} certificate/catalog verification failed")
   endif()
 endfunction()
 
 function(_fetch_vdd)
-  _fetch_vdd_release("latest" "${VDD_DRIVER_VERSION}" "${VDD_DRIVER_ASSET_NAME}" "${VDD_DRIVER_DIR}" "zakovdd")
-  _fetch_vdd_release("win10" "${VDD_WIN10_DRIVER_VERSION}" "${VDD_WIN10_DRIVER_ASSET_NAME}" "${VDD_WIN10_DRIVER_DIR}" "zakovdd-win10")
+  _fetch_vdd_release("latest" "${VDD_DRIVER_VERSION}" "${VDD_DRIVER_ASSET_NAME}" "${VDD_DRIVER_DIR}" "zakovdd" "${VDD_DRIVER_SHA256}")
+  _fetch_vdd_release("win10" "${VDD_WIN10_DRIVER_VERSION}" "${VDD_WIN10_DRIVER_ASSET_NAME}" "${VDD_WIN10_DRIVER_DIR}" "zakovdd-win10" "${VDD_WIN10_DRIVER_SHA256}")
 endfunction()
 
 # ---------------------------------------------------------------------------
@@ -452,11 +494,13 @@ _check_driver("vmouse" VMOUSE_DRIVER_AVAILABLE
     "${VMOUSE_DRIVER_DIR}/ZakoVirtualMouse.cat"
     "${VMOUSE_DRIVER_DIR}/ZakoVirtualMouse.cer")
 _check_driver("vdd (latest)" VDD_DRIVER_AVAILABLE
+    "${DRIVER_DEPS_CACHE}/zakovdd-${VDD_DRIVER_VERSION}.zip"
     "${VDD_DRIVER_DIR}/ZakoVDD.dll"
     "${VDD_DRIVER_DIR}/ZakoVDD.inf"
     "${VDD_DRIVER_DIR}/ZakoVDD.cat"
     "${VDD_DRIVER_DIR}/ZakoVDD.cer")
 _check_driver("vdd (win10)" VDD_WIN10_DRIVER_AVAILABLE
+    "${DRIVER_DEPS_CACHE}/zakovdd-win10-${VDD_WIN10_DRIVER_VERSION}.zip"
     "${VDD_WIN10_DRIVER_DIR}/ZakoVDD.dll"
     "${VDD_WIN10_DRIVER_DIR}/ZakoVDD.inf"
     "${VDD_WIN10_DRIVER_DIR}/ZakoVDD.cat"

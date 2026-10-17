@@ -95,6 +95,9 @@ install(DIRECTORY "${SUNSHINE_SOURCE_ASSETS_DIR}/windows/misc/vsink/"
         DESTINATION "scripts"
         COMPONENT vsink)
 # VDD: scripts & shared config from source tree, driver binaries from download cache
+install(FILES "${SUNSHINE_SOURCE_ASSETS_DIR}/windows/misc/verify-driver-certificate.ps1"
+        DESTINATION "scripts"
+        COMPONENT assets)
 install(FILES "${SUNSHINE_SOURCE_ASSETS_DIR}/windows/misc/vdd/install-vdd.bat"
               "${SUNSHINE_SOURCE_ASSETS_DIR}/windows/misc/vdd/vdd-device-helper.ps1"
               "${SUNSHINE_SOURCE_ASSETS_DIR}/windows/misc/vdd/uninstall-vdd.bat"
@@ -127,7 +130,7 @@ set(VDD_VULKAN_HDR_FILES
     "${VDD_DRIVER_DIR}/zako_vulkan_hdr_bridge.dll"
     "${VDD_DRIVER_DIR}/VkLayer_zako_virtual_hdr.json"
     "${VDD_DRIVER_DIR}/vulkan_hdr_probe.exe")
-set(VDD_VULKAN_HDR_AVAILABLE TRUE)
+set(VDD_VULKAN_HDR_AVAILABLE ${VDD_DRIVER_AVAILABLE})
 foreach(VDD_VULKAN_HDR_FILE IN LISTS VDD_VULKAN_HDR_FILES)
   if(NOT EXISTS "${VDD_VULKAN_HDR_FILE}")
     set(VDD_VULKAN_HDR_AVAILABLE FALSE)
@@ -160,7 +163,9 @@ endif()
 
 install(DIRECTORY "${SUNSHINE_SOURCE_ASSETS_DIR}/windows/misc/helper/"
         DESTINATION "tools"
-        COMPONENT assets)
+        COMPONENT assets
+        PATTERN "device-toggler.exe" EXCLUDE
+        PATTERN "setreg.exe" EXCLUDE)
 
 # Sunshine assets
 install(DIRECTORY "${SUNSHINE_SOURCE_ASSETS_DIR}/windows/assets/"

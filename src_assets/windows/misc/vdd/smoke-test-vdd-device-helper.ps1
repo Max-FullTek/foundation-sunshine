@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [string] $HelperScript
+    [string] $HelperScript,
+    [switch] $KeepTestArtifacts
 )
 
 $ErrorActionPreference = 'Stop'
@@ -603,9 +604,10 @@ try {
 finally {
     ${function:Get-VddDevices} = $originalGetVddDevices
     ${function:Restore-VddDevice} = $originalRestoreVddDevice
-    if (Test-Path -LiteralPath $transactionTestRoot) {
+    if (-not $KeepTestArtifacts -and (Test-Path -LiteralPath $transactionTestRoot)) {
         Remove-Item -LiteralPath $transactionTestRoot -Recurse -Force
     }
+    if ($KeepTestArtifacts) { Write-Output "Test artifacts: $transactionTestRoot" }
     Remove-Variable -Name transactionDevices -Scope Script -ErrorAction SilentlyContinue
     Remove-Variable -Name transactionRestoreCalls -Scope Script -ErrorAction SilentlyContinue
     Remove-Variable -Name transactionRestoreResult -Scope Script -ErrorAction SilentlyContinue
@@ -615,6 +617,7 @@ $originalResolveVddPayload = ${function:Resolve-VddPayload}
 $originalGetVddPaths = ${function:Get-VddPaths}
 $originalGetVddState = ${function:Get-VddState}
 $originalStageVddPayload = ${function:Stage-VddPayload}
+$originalAssertVddPayloadCertificate = ${function:Assert-VddPayloadCertificate}
 $originalAddVddDriverPackage = ${function:Add-VddDriverPackage}
 $originalRemoveAllVddDevices = ${function:Remove-AllVddDevices}
 $originalRemoveVddRegistry = ${function:Remove-VddRegistry}
@@ -651,6 +654,11 @@ try {
         }
     }
     function Stage-VddPayload { $script:workflowCalls += 'Stage' }
+    function Assert-VddPayloadCertificate {
+        if ($script:failWorkflowCertificate) {
+            throw 'simulated certificate validation failure'
+        }
+    }
     function Add-VddDriverPackage {
         $script:workflowCalls += 'Package'
         if ($script:failWorkflowPackage) {
@@ -699,6 +707,19 @@ try {
         CurrentStatus = 'OK'
         CurrentInf = 'oem42.inf'
     }
+    $script:failWorkflowCertificate = $true
+    $certificateRejected = $false
+    try {
+        Invoke-VddInstall $PSScriptRoot 'Run'
+    }
+    catch {
+        $certificateRejected = $_.Exception.Message -eq 'simulated certificate validation failure'
+    }
+    Assert-Equal -Expected $true -Actual $certificateRejected -Message `
+        'An unverified VDD certificate must fail before staging or modifying the device.'
+    Assert-Equal -Expected 0 -Actual $script:workflowCalls.Count -Message `
+        'Certificate failure must leave the existing payload, configuration and device untouched.'
+    $script:failWorkflowCertificate = $false
     Invoke-VddInstall $PSScriptRoot 'Run'
     Assert-Equal -Expected 'Stage,Configure,Cleanup:100.0.16.6' -Actual ($script:workflowCalls -join ',') `
         -Message 'A healthy matching device must keep its package and skip reinstall.'
@@ -838,6 +859,7 @@ finally {
     ${function:Get-VddPaths} = $originalGetVddPaths
     ${function:Get-VddState} = $originalGetVddState
     ${function:Stage-VddPayload} = $originalStageVddPayload
+    ${function:Assert-VddPayloadCertificate} = $originalAssertVddPayloadCertificate
     ${function:Add-VddDriverPackage} = $originalAddVddDriverPackage
     ${function:Remove-AllVddDevices} = $originalRemoveAllVddDevices
     ${function:Remove-VddRegistry} = $originalRemoveVddRegistry
@@ -852,6 +874,7 @@ finally {
     Remove-Variable -Name workflowDevices -Scope Script -ErrorAction SilentlyContinue
     Remove-Variable -Name failWorkflowInstall -Scope Script -ErrorAction SilentlyContinue
     Remove-Variable -Name failWorkflowPackage -Scope Script -ErrorAction SilentlyContinue
+    Remove-Variable -Name failWorkflowCertificate -Scope Script -ErrorAction SilentlyContinue
     Remove-Variable -Name workflowRequestsRestart -Scope Script -ErrorAction SilentlyContinue
     Remove-Variable -Name workflowRestoreRequestsRestart -Scope Script -ErrorAction SilentlyContinue
     $script:vddRestartRequired = $false

@@ -667,6 +667,16 @@ function Set-VddConfiguration([object] $Payload) {
     }
 }
 
+function Assert-VddPayloadCertificate([string] $Directory) {
+    $verifier = Join-Path $PSScriptRoot 'verify-driver-certificate.ps1'
+    if (-not (Test-Path -LiteralPath $verifier)) {
+        # Source-tree layout; packaged scripts live together in scripts/.
+        $verifier = Join-Path $PSScriptRoot '..\verify-driver-certificate.ps1'
+    }
+    . $verifier -Driver VDD -Directory $Directory
+    Assert-DriverCertificate 'VDD' $Directory
+}
+
 function Add-VddDriverPackage([object] $Payload) {
     $certificate = Join-Path $Payload.Paths.Dist 'ZakoVDD.cer'
     $inf = Join-Path $Payload.Paths.Dist 'ZakoVDD.inf'
@@ -676,6 +686,7 @@ function Add-VddDriverPackage([object] $Payload) {
         }
     }
 
+    Assert-VddPayloadCertificate $Payload.Paths.Dist
     & (Join-Path $env:SystemRoot 'System32\certutil.exe') -addstore -f root $certificate
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to import the VDD certificate (exit code $LASTEXITCODE)."
@@ -879,6 +890,9 @@ function Invoke-VddInstall(
         return
     }
 
+    if ($InstallMode -eq 'Run') {
+        Assert-VddPayloadCertificate $payload.DriverDir
+    }
     $state = Get-VddState (Join-Path $payload.DriverDir 'ZakoVDD.inf')
     if ($InstallMode -eq 'Run' -and
         (Test-Path -LiteralPath (Get-VddTransactionPath $payload))) {

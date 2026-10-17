@@ -46,6 +46,10 @@ if not errorlevel 1 (
     exit /b 87
 )
 
+rem Verify the pinned certificate and catalog before changing any system state.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0..\verify-driver-certificate.ps1" -Driver VirtualMouse -Directory "%DRIVER_DIR%"
+if errorlevel 1 exit /b 1
+
 rem Skip expensive PnP and DriverStore cleanup on a clean installation.
 set "VMOUSE_CLEANUP_REQUIRED=0"
 if exist "%DIST_DIR%\ZakoVirtualMouse.inf" set "VMOUSE_CLEANUP_REQUIRED=1"
@@ -158,12 +162,17 @@ rem  Install Certificate and Driver
 rem ============================================================================
 
 :after_existing_vmouse_cleanup
+rem Check the staged copy again before importing into the system trust stores.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0..\verify-driver-certificate.ps1" -Driver VirtualMouse -Directory "%DIST_DIR%"
+if errorlevel 1 exit /b 1
 rem Install certificate to Trusted Root and Trusted Publisher stores
 set "CERTIFICATE=%DIST_DIR%\ZakoVirtualMouse.cer"
 if exist "%CERTIFICATE%" (
     echo Installing driver certificate...
     certutil -addstore -f root "%CERTIFICATE%"
+    if errorlevel 1 exit /b 1
     certutil -addstore -f TrustedPublisher "%CERTIFICATE%"
+    if errorlevel 1 exit /b 1
 )
 
 rem Create device node and install driver

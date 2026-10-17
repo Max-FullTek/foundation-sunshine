@@ -88,15 +88,18 @@ english.ComponentFirewall=Add firewall exclusions
 english.ComponentGamepad=Virtual Gamepad (ViGEmBus)
 english.ComponentVmouse=Virtual Mouse Driver (UMDF)
 english.ComponentTools=Diagnostic tools (dxgi-info, audio-info)
-english.TypeRecommended=Recommended (virtual display + firewall + autostart)
-english.TypeFull=Full installation (all components)
+english.TypeRecommended=Recommended (core + firewall + autostart)
+english.TypeFull=Extended installation (virtual display + gamepad)
 english.TypeCompact=Compact installation (core only)
 english.TypeCustom=Custom installation
-english.ComponentVDDDesc=Optional: stream using a virtual display with HDR support. Physical-display streaming does not require this driver.
+english.ComponentVDDDesc=Optional HDR virtual display. Imports an upstream test-signing certificate into Trusted Root. Not needed for physical displays.
 english.ComponentFirewallDesc=Allows Moonlight clients to discover and connect to this PC over the network.
 english.ComponentAutostartDesc=Sunshine will start automatically when Windows boots. Recommended for always-on streaming.
-english.ComponentGamepadDesc=Emulates Xbox controller for games. Install only if you need gamepad input from the client.
-english.ComponentVmouseDesc=Provides smooth absolute mouse positioning. Install if cursor feels laggy.
+english.ComponentGamepadDesc=Optional Xbox controller emulation for client gamepad input. Upstream maintenance has ended.
+english.ComponentVmouseDesc=Advanced, optional absolute mouse positioning. Imports a test-signing certificate into Trusted Root and Trusted Publishers.
+english.MsgDriverTrust=The selected optional drivers will add upstream test-signing certificates to this computer's trust stores:%n%n%1%n%nThese certificates are not public certificate-authority endorsements. Continue only if you trust these driver publishers.%n%nContinue installing the selected drivers?
+english.VDDTrust=ZakoVDD: Trusted Root Certification Authorities
+english.VmouseTrust=Virtual Mouse: Trusted Root Certification Authorities and Trusted Publishers
 english.ComponentToolsDesc=dxgi-info, audio-info for troubleshooting display and audio issues.
 english.StatusResetPermissions=Resetting file permissions...
 english.StatusUpdatePath=Updating system PATH...
@@ -130,15 +133,18 @@ chinesesimplified.ComponentFirewall=添加防火墙规则
 chinesesimplified.ComponentGamepad=虚拟手柄（ViGEmBus）
 chinesesimplified.ComponentVmouse=虚拟鼠标驱动（UMDF）
 chinesesimplified.ComponentTools=诊断工具（dxgi-info、audio-info）
-chinesesimplified.TypeRecommended=推荐安装（虚拟显示器 + 防火墙 + 开机自启）
-chinesesimplified.TypeFull=完全安装（所有组件）
+chinesesimplified.TypeRecommended=推荐安装（核心 + 防火墙 + 开机自启）
+chinesesimplified.TypeFull=扩展安装（虚拟显示器 + 手柄）
 chinesesimplified.TypeCompact=简洁安装（仅核心）
 chinesesimplified.TypeCustom=自定义安装
-chinesesimplified.ComponentVDDDesc=选用：使用支持 HDR 的虚拟显示器串流。使用实体显示器串流时不需要此驱动。
+chinesesimplified.ComponentVDDDesc=选用 HDR 虚拟显示器。会将上游测试签名证书导入受信任的根证书存储区。实体显示器无需安装。
 chinesesimplified.ComponentFirewallDesc=允许 Moonlight 客户端通过网络发现并连接本机。
 chinesesimplified.ComponentAutostartDesc=Windows 启动时自动运行 Sunshine。推荐常驻串流使用。
-chinesesimplified.ComponentGamepadDesc=模拟 Xbox 手柄。仅需要从客户端传入手柄输入时安装。
-chinesesimplified.ComponentVmouseDesc=提供平滑的绝对定位鼠标。如鼠标延迟可尝试安装。
+chinesesimplified.ComponentGamepadDesc=选用：接收客户端的手柄输入并模拟 Xbox 手柄。上游已停止维护。
+chinesesimplified.ComponentVmouseDesc=进阶选装：提供鼠标绝对定位。会将测试签名证书导入受信任的根证书及受信任的发布者存储区。
+chinesesimplified.MsgDriverTrust=所选的可选驱动会将上游测试签名证书添加到本机的信任存储区：%n%n%1%n%n这些证书不代表公共证书颁发机构的认可。请仅在信任这些驱动发布者时继续。%n%n是否继续安装所选驱动？
+chinesesimplified.VDDTrust=ZakoVDD：受信任的根证书颁发机构
+chinesesimplified.VmouseTrust=虚拟鼠标：受信任的根证书颁发机构及受信任的发布者
 chinesesimplified.ComponentToolsDesc=dxgi-info、audio-info 等，用于排查显示和音频问题。
 chinesesimplified.StatusResetPermissions=正在重置文件权限...
 chinesesimplified.StatusUpdatePath=正在更新系统 PATH...
@@ -172,15 +178,18 @@ chinesetraditional.ComponentFirewall=新增防火牆規則
 chinesetraditional.ComponentGamepad=虛擬遊戲控制器（ViGEmBus）
 chinesetraditional.ComponentVmouse=虛擬滑鼠驅動程式（UMDF）
 chinesetraditional.ComponentTools=診斷工具（dxgi-info、audio-info）
-chinesetraditional.TypeRecommended=建議安裝（虛擬顯示器、防火牆與開機啟動）
-chinesetraditional.TypeFull=完整安裝（所有元件）
+chinesetraditional.TypeRecommended=建議安裝（核心、防火牆與開機啟動）
+chinesetraditional.TypeFull=擴充安裝（虛擬顯示器與遊戲控制器）
 chinesetraditional.TypeCompact=精簡安裝（僅核心元件）
 chinesetraditional.TypeCustom=自訂安裝
-chinesetraditional.ComponentVDDDesc=選用：使用支援 HDR 的虛擬顯示器串流。使用實體顯示器串流時不需要此驅動程式。
+chinesetraditional.ComponentVDDDesc=選用 HDR 虛擬顯示器。會將上游測試簽章憑證匯入受信任的根憑證存放區。實體顯示器無須安裝。
 chinesetraditional.ComponentFirewallDesc=允許 Moonlight 用戶端透過網路探索並連線至這台電腦。
 chinesetraditional.ComponentAutostartDesc=Windows 開機時自動啟動 Sunshine。適合需要隨時接受串流連線的主機。
-chinesetraditional.ComponentGamepadDesc=模擬 Xbox 遊戲控制器。僅在需要接收用戶端的遊戲控制器輸入時安裝。
-chinesetraditional.ComponentVmouseDesc=提供平順的滑鼠絕對定位。可依滑鼠操作需求選擇安裝。
+chinesetraditional.ComponentGamepadDesc=選用：接收用戶端的遊戲控制器輸入並模擬 Xbox 控制器。上游已停止維護。
+chinesetraditional.ComponentVmouseDesc=進階選裝：提供滑鼠絕對定位。會將測試簽章憑證匯入受信任的根憑證與受信任的發行者存放區。
+chinesetraditional.MsgDriverTrust=所選的選用驅動程式會將上游測試簽章憑證加入這台電腦的信任存放區：%n%n%1%n%n這些憑證不代表公開憑證授權單位的認可。請僅在信任這些驅動程式發行者時繼續。%n%n是否繼續安裝所選驅動程式？
+chinesetraditional.VDDTrust=ZakoVDD：受信任的根憑證授權單位
+chinesetraditional.VmouseTrust=虛擬滑鼠：受信任的根憑證授權單位與受信任的發行者
 chinesetraditional.ComponentToolsDesc=使用 dxgi-info、audio-info 排查顯示與音訊問題。
 chinesetraditional.StatusResetPermissions=正在重設檔案權限...
 chinesetraditional.StatusUpdatePath=正在更新系統 PATH...
@@ -228,11 +237,11 @@ Name: "custom"; Description: "{cm:TypeCustom}"; Flags: iscustom
 Name: "application"; Description: "{cm:ComponentApplication}"; Types: recommended full compact custom; Flags: fixed
 Name: "assets"; Description: "{cm:ComponentAssets}"; Types: recommended full compact custom; Flags: fixed
 Name: "gui"; Description: "{cm:ComponentGUI}"; Types: recommended full compact custom; Flags: fixed
-Name: "vdd"; Description: "{cm:ComponentVDD} — {cm:ComponentVDDDesc}"; Types: recommended full; ExtraDiskSpaceRequired: 2097152
+Name: "vdd"; Description: "{cm:ComponentVDD} — {cm:ComponentVDDDesc}"; Types: full; ExtraDiskSpaceRequired: 2097152
 Name: "firewall"; Description: "{cm:ComponentFirewall} — {cm:ComponentFirewallDesc}"; Types: recommended full compact
 Name: "autostart"; Description: "{cm:ComponentAutostart} — {cm:ComponentAutostartDesc}"; Types: recommended full
-Name: "gamepad"; Description: "{cm:ComponentGamepad} — {cm:ComponentGamepadDesc}"; Types: recommended full
-Name: "vmouse"; Description: "{cm:ComponentVmouse} — {cm:ComponentVmouseDesc}"; Types: recommended full
+Name: "gamepad"; Description: "{cm:ComponentGamepad} — {cm:ComponentGamepadDesc}"; Types: full
+Name: "vmouse"; Description: "{cm:ComponentVmouse} — {cm:ComponentVmouseDesc}"
 Name: "tools"; Description: "{cm:ComponentTools} — {cm:ComponentToolsDesc}"; Types: recommended full
 
 [Tasks]
@@ -299,11 +308,9 @@ Source: "{#MySourceDir}\assets\gui\paired-build.json"; DestDir: "{app}\assets\gu
 Source: "{#MySourceDir}\assets\gui\WebView2Loader.dll"; DestDir: "{app}\assets\gui"; Flags: ignoreversion skipifsourcedoesntexist; Components: gui
 
 ; Helper tools
-Source: "{#MySourceDir}\tools\device-toggler.exe"; DestDir: "{app}\tools"; Flags: ignoreversion; Components: assets
 Source: "{#MySourceDir}\tools\DevManView.exe"; DestDir: "{app}\tools"; Flags: ignoreversion; Components: assets
 Source: "{#MySourceDir}\tools\restart64.exe"; DestDir: "{app}\tools"; Flags: ignoreversion; Components: assets
 Source: "{#MySourceDir}\tools\SetDpi.exe"; DestDir: "{app}\tools"; Flags: ignoreversion; Components: assets
-Source: "{#MySourceDir}\tools\setreg.exe"; DestDir: "{app}\tools"; Flags: ignoreversion; Components: assets
 
 ; Autostart script
 ; Always copy so users can run it manually as admin if they unchecked autostart.
@@ -328,6 +335,7 @@ Source: "{#MySourceDir}\scripts\gamepad\*"; DestDir: "{app}\scripts\gamepad"; Fl
 ; Virtual Mouse Driver scripts & files
 Source: "{#MySourceDir}\scripts\vmouse\install-vmouse.bat"; DestDir: "{app}\scripts\vmouse"; Flags: ignoreversion
 Source: "{#MySourceDir}\scripts\vmouse\uninstall-vmouse.bat"; DestDir: "{app}\scripts\vmouse"; Flags: ignoreversion
+Source: "{#MySourceDir}\scripts\verify-driver-certificate.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "{#MySourceDir}\scripts\vmouse\driver\*"; DestDir: "{app}\scripts\vmouse\driver"; Flags: ignoreversion recursesubdirs skipifsourcedoesntexist
 
 ; Virtual audio sink (microphone / VB-Cable) scripts
@@ -1071,6 +1079,19 @@ end;
 
 // Use previous installation directory as default
 function NextButtonClick(CurPageID: Integer): Boolean;
+var
+  TrustChanges: String;
 begin
   Result := True;
+  if CurPageID = wpSelectComponents then
+  begin
+    TrustChanges := '';
+    if WizardIsComponentSelected('vdd') then
+      TrustChanges := CustomMessage('VDDTrust');
+    if WizardIsComponentSelected('vmouse') then
+      TrustChanges := TrustChanges + #13#10 + CustomMessage('VmouseTrust');
+    if TrustChanges <> '' then
+      Result := MsgBox(FmtMessage(CustomMessage('MsgDriverTrust'), [TrustChanges]),
+        mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES;
+  end;
 end;
