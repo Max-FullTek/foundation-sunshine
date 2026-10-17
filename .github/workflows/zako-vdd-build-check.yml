@@ -1,0 +1,113 @@
+name: Zako VDD source build check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/verified-gui-build]
+    paths: [.github/workflows/zako-vdd-build-check.yml]
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 40
+    steps:
+      - name: Checkout official v0.18.0 source
+        uses: actions/checkout@v7
+        with:
+          repository: qiin2333/zako-vdd
+          ref: 22b15167bec5b9ec9ae76e75cbc697704965ab08
+          persist-credentials: false
+
+      - name: Record source and runner identity
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Path evidence | Out-Null
+          $source = (git rev-parse HEAD).Trim()
+          if ($source -ne '22b15167bec5b9ec9ae76e75cbc697704965ab08') { throw 'Unexpected source commit' }
+          [ordered]@{
+            repository = 'https://github.com/qiin2333/zako-vdd'
+            tag = 'v0.18.0'
+            source_commit = $source
+            workflow_commit = '${{ github.sha }}'
+            run_url = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+            runner_image = $env:ImageOS
+            runner_image_version = $env:ImageVersion
+            configuration = 'Release'
+            platform = 'x64'
+            signing = 'Off; build experiment only, not an installable release'
+          } | ConvertTo-Json | Set-Content evidence/source.json
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+        with:
+          vs-version: '[17.0,18.0)'
+
+      # Same WDK bootstrap as the pinned upstream compile.yml, confined to the
+      # disposable hosted runner. No signing secrets or certificate imports.
+      - name: Prepare WDK on hosted runner
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $taskPattern = 'C:\Program Files*\Windows Kits\10\build\*\bin\Microsoft.DriverKit.Build.Tasks.17.0.dll'
+          $header = Get-ChildItem 'C:\Program Files*\Windows Kits\10\Include\*\wdf' -Directory -ErrorAction SilentlyContinue | Select-Object -First 1
+          $task = Get-ChildItem $taskPattern -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not ($header -and $task)) {
+            $installer = Join-Path $env:RUNNER_TEMP 'zako-wdksetup.exe'
+            Invoke-WebRequest 'https://go.microsoft.com/fwlink/?linkid=2272234' -OutFile $installer
+            Get-FileHash $installer -Algorithm SHA256 | Format-List | Out-File evidence/wdk-installer.txt
+            $process = Start-Process $installer -ArgumentList '/quiet', '/norestart', '/features', '+' -Wait -PassThru -WindowStyle Hidden
+            if ($process.ExitCode -ne 0) { throw "WDK setup failed: $($process.ExitCode)" }
+          }
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vs = & $vswhere -products '*' -requires Microsoft.Component.MSBuild -version '[17.0,18.0)' -property installationPath -latest
+          if (-not $vs) { throw 'VS2022 MSBuild installation missing' }
+          $vsixInstaller = Join-Path $vs 'Common7\IDE\VSIXInstaller.exe'
+          $vsixFiles = @(Get-ChildItem 'C:\Program Files*\Windows Kits\10\Vsix\*\WDK.vsix' -ErrorAction SilentlyContinue)
+          if (-not $vsixFiles) { throw 'WDK.vsix missing' }
+          foreach ($vsix in $vsixFiles) {
+            $process = Start-Process $vsixInstaller -ArgumentList '/q', ('"' + $vsix.FullName + '"') -Wait -PassThru -WindowStyle Hidden
+            if ($process.ExitCode -notin @(0, 1001, 3001)) { throw "WDK VSIX setup failed: $($process.ExitCode)" }
+          }
+          $tasks = @(Get-ChildItem $taskPattern -ErrorAction SilentlyContinue)
+          if (-not $tasks) { throw 'WDK VS2022 build tasks missing' }
+          $tasks | Select-Object FullName, @{n='FileVersion';e={$_.VersionInfo.FileVersion}} | ConvertTo-Json | Set-Content evidence/wdk.json
+          & $vswhere -products '*' -requires Microsoft.Component.MSBuild -version '[17.0,18.0)' -format json | Set-Content evidence/visual-studio.json
+          & msbuild -version | Set-Content evidence/msbuild.txt
+
+      - name: Compile unchanged official driver without signing
+        shell: pwsh
+        run: |
+          & msbuild ZakoVDD.sln /m /p:Configuration=Release /p:Platform=x64 /p:SignMode=Off /bl:evidence/vdd.binlog /fl '/flp:logfile=evidence/vdd-build.log;verbosity=normal'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $required = @('ZakoVDD.dll', 'ZakoVDD.inf', 'vdd_settings.xml')
+          foreach ($name in $required) {
+            if (-not (Test-Path -LiteralPath "x64/Release/ZakoVDD/$name")) { throw "Missing build output: $name" }
+          }
+          Get-ChildItem x64/Release/ZakoVDD -File | Get-FileHash -Algorithm SHA256 | Select-Object Path, Hash | ConvertTo-Json | Set-Content evidence/output-sha256.json
+          $sourceChanges = @(git status --porcelain --untracked-files=no)
+          [IO.File]::WriteAllText((Join-Path $PWD 'evidence/source-changes.txt'), ($sourceChanges -join "`n"))
+          if ($sourceChanges.Count -gt 0) { throw 'Tracked upstream source changed during build' }
+
+      - name: Run upstream EDID profile tests
+        shell: cmd
+        run: call tools\edid_test\build_consumer.bat
+
+      - name: Upload build evidence and experimental outputs
+        if: always()
+        uses: actions/upload-artifact@v8
+        with:
+          name: zako-vdd-v0.18.0-source-build-check
+          retention-days: 14
+          path: |
+            evidence/
+            x64/Release/ZakoVDD/ZakoVDD.dll
+            x64/Release/ZakoVDD/ZakoVDD.inf
+            x64/Release/ZakoVDD/zakovdd.cat
+            x64/Release/ZakoVDD/vdd_settings.xml
