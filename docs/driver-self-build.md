@@ -30,6 +30,12 @@
 
 試編入口：[Zako VDD source build check](../.github/workflows/zako-vdd-build-check.yml)。僅產生實驗 artifacts，不建立 Release，也不修改本機。上游工具的 Vulkan／HDR 診斷完整建置不屬於首次 DLL 試編，待版本相容性確認後安排。
 
+### 首次試編結果與下一步
+
+官方相同 commit 的 [v0.18.0 建置](https://github.com/qiin2333/zako-vdd/actions/runs/39015528849) 已通過驅動編譯與 EDID profile tests，證明上游環境能編出來。我們的[獨立試編](https://github.com/Max-FullTek/foundation-sunshine/actions/runs/39061210260) 停在 WDK 準備，尚未執行 MSBuild 編譯或 EDID tests；artifact 目前只有來源證據，沒有新 DLL。
+
+已確認的流程差異：上游使用遞迴搜尋；我們的試編少了遞迴搜尋，找不到實際位於 `Windows Kits/10/Vsix/VS2022/10.0.26100.0/amd64/WDK.vsix` 的套件。下次先修正套件探索，並在 WDK 安裝後重新檢查 build tasks／headers，避免已具備編譯環境卻仍要求 VSIX 安裝。上游成功紀錄中的 VSIX exit code 是 `2001`，因此不能只照目前試編的 exit-code 白名單判定工具鏈不可用；需核對安裝紀錄與實際 tasks。這些差異屬於試編環境流程，尚無 VDD 原始碼編譯失敗證據。
+
 ## 本次收工條件與下一階段
 
 - 確認既有 Panel／Core Actions 的實際結果；未完成或失敗就保留狀態與原因，不宣稱已通過。
