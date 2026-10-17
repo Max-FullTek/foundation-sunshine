@@ -1215,6 +1215,7 @@
     "skip": "Hoppa över installationsguiden",
     "skip_confirm": "Är du säker på att du vill hoppa över installationsguiden? Du kan konfigurera dessa alternativ senare på inställningssidan.",
     "skip_confirm_title": "Hoppa över installationsguiden",
+    "skip_display": "Hoppa över skärminställningar och behåll nuvarande inställningar",
     "skip_error": "Det gick inte att hoppa över",
     "state_active": "Aktiv",
     "state_inactive": "Inaktiv",

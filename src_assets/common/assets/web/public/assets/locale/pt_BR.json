@@ -1215,6 +1215,7 @@
     "skip": "Pular Assistente de Configuração",
     "skip_confirm": "Tem certeza de que deseja pular o assistente de configuração? Você pode configurar essas opções mais tarde na página de configurações.",
     "skip_confirm_title": "Pular Assistente de Configuração",
+    "skip_display": "Pular a configuração de tela e manter as configurações atuais",
     "skip_error": "Falha ao pular",
     "state_active": "Ativo",
     "state_inactive": "Inativo",

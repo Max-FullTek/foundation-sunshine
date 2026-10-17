@@ -1215,6 +1215,7 @@
     "skip": "설정 마법사 건너뛰기",
     "skip_confirm": "설정 마법사를 건너뛰시겠습니까? 나중에 설정 페이지에서 이러한 옵션을 구성할 수 있습니다.",
     "skip_confirm_title": "설정 마법사 건너뛰기",
+    "skip_display": "디스플레이 설정을 건너뛰고 현재 설정 유지",
     "skip_error": "건너뛰지 못했습니다.",
     "state_active": "활성",
     "state_inactive": "비활성",

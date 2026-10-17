@@ -1215,6 +1215,7 @@
     "skip": "Přeskočit průvodce nastavením",
     "skip_confirm": "Opravdu chcete průvodce nastavením přeskočit? Tyto možnosti můžete později nastavit na stránce nastavení.",
     "skip_confirm_title": "Přeskočit průvodce nastavením",
+    "skip_display": "Přeskočit nastavení displeje a zachovat současné nastavení",
     "skip_error": "Přeskočení se nezdařilo",
     "state_active": "Aktivní",
     "state_inactive": "Neaktivní",

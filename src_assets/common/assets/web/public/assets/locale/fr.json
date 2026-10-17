@@ -1215,6 +1215,7 @@
     "skip": "Ignorer l'assistant de configuration",
     "skip_confirm": "Êtes-vous sûr de vouloir ignorer l'assistant de configuration ? Vous pourrez configurer ces options plus tard dans la page des paramètres.",
     "skip_confirm_title": "Ignorer l'assistant de configuration",
+    "skip_display": "Ignorer la configuration de l’écran et conserver les réglages actuels",
     "skip_error": "Échec de l'ignorance",
     "state_active": "Actif",
     "state_inactive": "Inactif",

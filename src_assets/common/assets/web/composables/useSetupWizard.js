@@ -60,6 +60,7 @@ export function useSetupWizard() {
     const setupCompleted = isTrue(config.setup_wizard_completed)
     
     if (setupCompleted && !force) {
+      showSetupWizard.value = false
       clearSavedLanguageMarker()
       return false
     }
@@ -72,9 +73,12 @@ export function useSetupWizard() {
   }
 
   // 设置完成回调
-  const onSetupComplete = (config) => {
-    console.log('设置完成:', config)
-    // 用户点击"配置应用程序"按钮后会自动跳转到 /apps
+  const onSetupComplete = () => {
+    showSetupWizard.value = false
+    clearSavedLanguageMarker()
+    const url = new URL(window.location.href)
+    url.searchParams.delete('setup')
+    window.history.replaceState(window.history.state, '', url)
   }
 
   return {

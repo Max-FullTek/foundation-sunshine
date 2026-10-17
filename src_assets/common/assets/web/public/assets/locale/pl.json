@@ -1215,6 +1215,7 @@
     "skip": "Pomiń kreatora instalacji",
     "skip_confirm": "Czy na pewno chcesz pominąć kreatora konfiguracji? Możesz skonfigurować te opcje później na stronie ustawień.",
     "skip_confirm_title": "Pomiń kreatora instalacji",
+    "skip_display": "Pomiń konfigurację ekranu i zachowaj bieżące ustawienia",
     "skip_error": "Nie udało się pominąć",
     "state_active": "Aktywne",
     "state_inactive": "Nieaktywne",

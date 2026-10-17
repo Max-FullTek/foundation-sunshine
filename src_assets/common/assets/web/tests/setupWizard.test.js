@@ -108,3 +108,23 @@ test('wizard preserves Traditional Chinese when choosing the initial language', 
   assert.equal(getWizardLocale('en'), 'en')
   assert.equal(getWizardLocale('ja'), 'en')
 })
+
+test('completion hides forced wizard and removes only setup query', t => {
+  setSessionStorage({ [SETUP_WIZARD_LANGUAGE_SAVED_KEY]: 'true' })
+  const originalWindow = globalThis.window
+  t.after(() => { globalThis.window = originalWindow })
+  let replaced
+  globalThis.window = {
+    sessionStorage: globalThis.sessionStorage,
+    location: { href: 'https://localhost:47990/?setup=1&other=keep#anchor' },
+    history: { state: null, replaceState: (state, title, url) => { replaced = new URL(url) } },
+  }
+  const wizard = useSetupWizard()
+  wizard.checkSetupWizard({ setup_wizard_completed: true }, { force: true })
+  wizard.onSetupComplete()
+  assert.equal(wizard.showSetupWizard.value, false)
+  assert.equal(replaced.searchParams.has('setup'), false)
+  assert.equal(replaced.searchParams.get('other'), 'keep')
+  assert.equal(replaced.hash, '#anchor')
+  assert.equal(globalThis.sessionStorage.getItem(SETUP_WIZARD_LANGUAGE_SAVED_KEY), null)
+})

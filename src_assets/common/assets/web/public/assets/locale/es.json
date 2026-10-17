@@ -1215,6 +1215,7 @@
     "skip": "Omitir el asistente de configuración",
     "skip_confirm": "¿Seguro que desea omitir el asistente? Puede configurar estas opciones más tarde en la página de ajustes.",
     "skip_confirm_title": "Omitir el asistente de configuración",
+    "skip_display": "Omitir la configuración de pantalla y conservar los ajustes actuales",
     "skip_error": "No se pudo omitir",
     "state_active": "Activa",
     "state_inactive": "Inactiva",

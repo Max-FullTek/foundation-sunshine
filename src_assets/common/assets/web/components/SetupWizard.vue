@@ -112,6 +112,11 @@
           <div v-else-if="currentStep === 3">
             <h3 class="mb-4">{{ $t('setup.step1_description') }}</h3>
             <p class="vdd-intro-text mb-4">{{ $t('setup.step1_vdd_intro') }}</p>
+            <button type="button" class="btn btn-setup btn-setup-secondary mb-3 setup-skip-display"
+                    :disabled="saving || vddInstalling"
+                    @click="skipDisplayConfiguration">
+              {{ $t('setup.skip_display') }}
+            </button>
             
             <!-- 基地显示器标题 -->
             <h5 class="my-3 physical-display-title">
@@ -143,6 +148,11 @@
               <small v-else-if="vddStatus.state !== 'unknown'" class="d-block">
                 {{ $t(`config.vdd_driver_state_${vddStatus.state}`) }}
               </small>
+              <button type="button" class="btn btn-secondary mt-2"
+                      :disabled="saving || vddInstalling || vddStatusLoading"
+                      @click="prepareVirtualDisplay">
+                {{ canManageVdd ? $t('setup.vdd_install_continue') : $t('setup.vdd_recheck_continue') }}
+              </button>
             </div>
 
             <!-- 物理显示器列表 -->
@@ -225,18 +235,10 @@
               </div>
           </div>
 
-          <!-- 步骤 5: 完成 -->
-          <div v-else-if="currentStep === 5">
-            <div>
-              <div class="alert alert-danger" v-if="saveError">
-                <i class="fas fa-exclamation-triangle"></i>
-                {{ saveError }}
-              </div>
-
-
-            </div>
+          <div v-if="currentStep === 5" role="status">
+            <h3>{{ $t('setup.setup_complete') }}</h3>
+            <p>{{ $t('setup.config_saved') }}</p>
           </div>
-
           <div v-if="currentStep < 5" class="setup-skip-entry">
             <button class="btn btn-setup btn-setup-skip"
                     @click="skipWizard"
@@ -246,6 +248,10 @@
               {{ $t('setup.skip') }}
             </button>
           </div>
+        </div>
+        <div v-if="saveError" class="alert alert-danger mt-2" role="alert">
+          <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+          {{ saveError }}
         </div>
       </div>
 
@@ -261,14 +267,14 @@
           <button class="btn btn-setup btn-setup-primary" 
                   @click="nextStep" 
                   v-if="currentStep < 5"
-                  :disabled="!canProceed || saving || vddInstalling || vddStatusLoading">
+                  :disabled="!canProceed || saving || vddInstalling">
             {{ nextButtonLabel }}
             <i class="fas fa-arrow-right"></i>
           </button>
 
           <button class="btn btn-setup btn-setup-primary" 
                   @click="goToApps" 
-                  v-if="currentStep === 5">
+                  v-if="currentStep === 5" :disabled="showRestartModal">
             {{ $t('setup.go_to_apps') }}
             <i class="fas fa-arrow-right"></i>
           </button>
@@ -321,7 +327,7 @@
 <script>
 import { trackEvents } from '../config/firebase.js'
 import { apiFetch, apiJson } from '../utils/apiFetch.js'
-import { saveSetupWizardLocale } from '../services/setupWizardService.js'
+import { saveSetupWizardLocale, saveSetupWizardConfig } from '../services/setupWizardService.js'
 import { detectSystemLocale } from '../config/i18n.js'
 import { writeInterfaceLocale } from '@/shared/locale.js'
 import { useI18n as useShellI18n } from '@/desktop/i18n/index.js'
@@ -393,7 +399,9 @@ export default {
       // 已有 locale 时向导会跳过第一步，不预置，避免 saveConfiguration() 覆盖已有设置（如 de / ja）
       // 首次进入向导时保留繁体中文、简体中文或英语预选。
       selectedLocale: this.hasLocale ? null : detectInitialWizardLocale(),
-      selectedDisplay: 'ZakoHDR', // 默认选择基地显示器
+      selectedDisplay: null,
+      savedConfig: null,
+      restartController: null,
       selectedAdapter: '',
       displayDevicePrep: 'ensure_only_display', // 默认选择：确保唯一显示器（VDD 和普通模式通用）
       saveError: null,
@@ -442,6 +450,7 @@ export default {
       clearInterval(this.restartTimer)
       this.restartTimer = null
     }
+    this.restartController?.abort()
     this.clearCompletionNoticeTimer()
   },
   computed: {
@@ -456,7 +465,7 @@ export default {
       } else if (this.currentStep === 2) {
         return this.selectedAdapter !== null
       } else if (this.currentStep === 3) {
-        return this.selectedDisplay !== null
+        return this.selectedDisplay !== null && (!this.isVirtualDisplay || this.vddReady)
       } else if (this.currentStep === 4) {
         return this.displayDevicePrep !== null
       }
@@ -466,11 +475,6 @@ export default {
       return this.selectedDisplay === 'ZakoHDR'
     },
     nextButtonLabel() {
-      if (this.currentStep === 3 && this.isVirtualDisplay && !this.vddReady) {
-        return this.canManageVdd
-          ? this.$t('setup.vdd_install_continue')
-          : this.$t('setup.vdd_recheck_continue')
-      }
       return this.currentStep === 4 ? this.$t('setup.finish') : this.$t('setup.next')
     },
     physicalDisplayDevices() {
@@ -490,6 +494,23 @@ export default {
 
   },
   methods: {
+    async prepareVirtualDisplay() {
+      if (this.saving || this.vddInstalling || this.vddStatusLoading) return
+      try {
+        if (this.canManageVdd) await this.installVdd()
+        else await this.refreshVddStatus()
+        if (this.vddReady) {
+          this.selectVirtualDisplay()
+          this.currentStep = 4
+        }
+      } catch {
+        // useVddStatus exposes the error in the prerequisite panel.
+      }
+    },
+    async skipDisplayConfiguration() {
+      if (this.saving || this.vddInstalling) return
+      await this.saveConfiguration({ preserveDisplay: true })
+    },
     selectVirtualDisplay() {
       if (this.vddReady) {
         this.selectedDisplay = 'ZakoHDR'
@@ -501,30 +522,23 @@ export default {
       }
     },
     async nextStep() {
+      if (this.saving || this.vddInstalling) return
+      this.saveError = null
       if (this.currentStep === 1 && this.canProceed) {
         // 保存语言设置并刷新
         await this.saveLanguage()
       } else if (this.currentStep === 2 && this.canProceed) {
         this.currentStep++
       } else if (this.currentStep === 3 && this.canProceed) {
-        if (this.isVirtualDisplay && !this.vddReady) {
-          try {
-            if (this.canManageVdd) {
-              await this.installVdd()
-            } else {
-              await this.refreshVddStatus()
-            }
-          } catch {
-            // The status panel keeps the selection and shows the actionable error.
-          }
-          if (!this.vddReady) return
-        }
         this.currentStep++
       } else if (this.currentStep === 4 && this.canProceed) {
         await this.saveConfiguration()
       }
     },
     async saveLanguage() {
+      if (this.saving) return
+      this.saving = true
+      this.saveError = null
       try {
         const response = await saveSetupWizardLocale(this.selectedLocale)
         if (!response.ok) {
@@ -536,9 +550,13 @@ export default {
         window.location.reload()
       } catch (error) {
         console.error('Failed to save language:', error)
+        this.saveError = `${this.$t('setup.save_error')}: ${error.message}`
+      } finally {
+        this.saving = false
       }
     },
-    async saveConfiguration() {
+    async saveConfiguration({ preserveDisplay = false } = {}) {
+      if (this.saving) return
       this.saving = true
       this.saveError = null
 
@@ -563,38 +581,31 @@ export default {
         config.adapter_name = this.selectedAdapter || ''
 
         // 设置选择的显示器
-        config.output_name = this.selectedDisplay
+        if (!preserveDisplay) {
+          if (!this.selectedDisplay || (this.isVirtualDisplay && !this.vddReady)) {
+            throw new Error(this.$t('setup.vdd_driver_required'))
+          }
+          config.output_name = this.selectedDisplay
 
-        // 统一保存 display_device_prep（VDD 和物理模式通用）
-        config.display_device_prep = this.displayDevicePrep
+          // 统一保存 display_device_prep（VDD 和物理模式通用）
+          config.display_device_prep = this.displayDevicePrep
+        }
 
-        console.log('保存配置:', config)
+        await saveSetupWizardConfig(config)
 
-        const response = await apiFetch('/api/config', {
-          method: 'POST',
-          body: config,
+        this.currentStep = 5
+        this.showCompletionNotices()
+
+        // 记录设置完成
+        trackEvents.userAction('setup_wizard_completed', {
+          selected_display: config.output_name,
+          adapter: this.selectedAdapter,
+          display_device_prep: config.display_device_prep,
+          is_virtual_display: config.output_name === 'ZakoHDR',
+          display_setup_skipped: preserveDisplay,
         })
 
-        if (response.ok) {
-          this.currentStep = 5
-          this.showCompletionNotices()
-          
-          // 记录设置完成
-          trackEvents.userAction('setup_wizard_completed', {
-            selected_display: this.selectedDisplay,
-            adapter: this.selectedAdapter,
-            display_device_prep: this.displayDevicePrep,
-            is_virtual_display: this.isVirtualDisplay
-          })
-          
-          this.$emit('setup-complete', config)
-        } else {
-          const errorText = await response.text()
-          this.saveError = `${this.$t('setup.save_error')}: ${errorText}`
-          
-          // 记录保存失败
-          trackEvents.errorOccurred('setup_config_save_failed', errorText)
-        }
+        this.savedConfig = config
       } catch (error) {
         console.error('Failed to save configuration:', error)
         this.saveError = `${this.$t('setup.save_error')}: ${error.message}`
@@ -657,30 +668,18 @@ export default {
         const config = { ...currentConfig }
         // 标记新手引导已完成
         config.setup_wizard_completed = true
-        console.log('跳过新手引导，保存配置:', config)
-        const response = await apiFetch('/api/config', {
-          method: 'POST',
-          body: config,
+        await saveSetupWizardConfig(config)
+
+        // 记录跳过事件
+        trackEvents.userAction('setup_wizard_skipped', {
+          from_step: this.currentStep
         })
 
-        if (response.ok) {
-          // 记录跳过事件
-          trackEvents.userAction('setup_wizard_skipped', {
-            from_step: this.currentStep
-          })
-          
-          // 触发完成事件，让父组件知道设置向导已完成
-          this.$emit('setup-complete', config)
-          
-          // 重新加载页面以隐藏设置向导
-          window.location.reload()
-        } else {
-          const errorText = await response.text()
-          this.saveError = `${this.$t('setup.skip_error')}: ${errorText}`
-          
-          // 记录跳过失败
-          trackEvents.errorOccurred('setup_wizard_skip_failed', errorText)
-        }
+        // 触发完成事件，让父组件知道设置向导已完成
+        this.$emit('setup-complete', config)
+
+        // Leave the forced setup URL after a successful save.
+        window.location.replace('/config')
       } catch (error) {
         console.error('Failed to skip wizard:', error)
         this.saveError = `${this.$t('setup.skip_error')}: ${error.message}`
@@ -697,12 +696,7 @@ export default {
       this.triggerRestartAndRedirect()
     },
     async triggerRestartAndRedirect() {
-      // 调用重启 API
-      try {
-        await apiFetch('/api/restart', { method: 'POST' })
-      } catch {
-        // 重启请求可能会断开连接，忽略错误
-      }
+      if (this.showRestartModal) return
       // 显示倒计时弹窗
       this.showRestartModal = true
       this.restartCountdown = 8
@@ -712,6 +706,12 @@ export default {
           this.finishRedirect()
         }
       }, 1000)
+      this.restartController = new AbortController()
+      try {
+        await apiFetch('/api/restart', { method: 'POST', signal: this.restartController.signal })
+      } catch {
+        // Restart may disconnect; the countdown bounds how long we wait.
+      }
     },
     skipRestartCountdown() {
       this.finishRedirect()
@@ -722,7 +722,9 @@ export default {
         this.restartTimer = null
       }
       this.showRestartModal = false
-      window.location.href = '/'
+      this.restartController?.abort()
+      this.$emit('setup-complete', this.savedConfig)
+      window.location.replace('/apps')
     },
     getDisplayName(device) {
       // 解析 device.data，提取友好名称
@@ -822,6 +824,7 @@ export default {
 .language-option { width:100%; display:flex; align-items:center; gap:16px; text-align:left; color:var(--ui-text-primary); font:inherit; }
 .language-option i { font-size:24px; color:var(--ui-accent); }
 .setup-skip-entry { margin-top:24px; }
+.setup-skip-display { white-space: normal; }
 .action-buttons > .btn-setup-primary { margin-left:auto; }
 .setup-header img {
   filter: drop-shadow(0 6px 14px rgba(var(--ui-accent-rgb), 0.18));

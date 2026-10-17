@@ -1215,6 +1215,7 @@
     "skip": "Einrichtungsassistent überspringen",
     "skip_confirm": "Sind Sie sicher, dass Sie den Einrichtungsassistenten überspringen möchten? Sie können diese Optionen später auf der Einstellungsseite konfigurieren.",
     "skip_confirm_title": "Einrichtungsassistent überspringen",
+    "skip_display": "Anzeigeeinrichtung überspringen und aktuelle Einstellungen beibehalten",
     "skip_error": "Überspringen fehlgeschlagen",
     "state_active": "Aktiv",
     "state_inactive": "Inaktiv",

@@ -1215,6 +1215,7 @@
     "skip": "Salta la configurazione guidata",
     "skip_confirm": "Sei sicuro di voler saltare la procedura guidata di configurazione? È possibile configurare queste opzioni in un secondo momento nella pagina delle impostazioni.",
     "skip_confirm_title": "Salta la configurazione guidata",
+    "skip_display": "Salta la configurazione dello schermo e mantieni le impostazioni attuali",
     "skip_error": "Impossibile saltare",
     "state_active": "Attivo",
     "state_inactive": "Inattivo",

@@ -1215,6 +1215,7 @@
     "skip": "Ignorar assistente de configuração",
     "skip_confirm": "Tem a certeza de que pretende ignorar o assistente de configuração? Pode configurar estas opções posteriormente na página de definições.",
     "skip_confirm_title": "Ignorar assistente de configuração",
+    "skip_display": "Ignorar a configuração do ecrã e manter as definições atuais",
     "skip_error": "Falha ao saltar",
     "state_active": "Ativo",
     "state_inactive": "Inativo",

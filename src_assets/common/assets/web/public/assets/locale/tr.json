@@ -1215,6 +1215,7 @@
     "skip": "Kurulum Sihirbazını Atla",
     "skip_confirm": "Kurulum sihirbazını atlamak istediğinizden emin misiniz? Bu seçenekleri daha sonra ayarlar sayfasından yapılandırabilirsiniz.",
     "skip_confirm_title": "Kurulum Sihirbazını Atla",
+    "skip_display": "Ekran kurulumunu atla ve mevcut ayarları koru",
     "skip_error": "Atlama başarısız oldu",
     "state_active": "Aktif",
     "state_inactive": "Pasif",
