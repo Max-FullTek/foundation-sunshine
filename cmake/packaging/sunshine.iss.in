@@ -3,6 +3,7 @@
 ; Edit cmake/packaging/sunshine.iss.in instead
 
 #define MyAppName "@CMAKE_PROJECT_NAME@"
+#define MyAppDisplayName "Foundation Sunshine Lite"
 #define MyAppVersion "@CPACK_PACKAGE_VERSION@"
 #define MyAppPublisher "@CPACK_PACKAGE_VENDOR@"
 #define MyAppURL "@CMAKE_PROJECT_HOMEPAGE_URL@"
@@ -17,9 +18,9 @@
 [Setup]
 ; 基本设置
 AppId={{B16E5C0D-7B8A-4E3B-9F1A-2D4C6E8F0A1B}
-AppName={#MyAppName}
+AppName={#MyAppDisplayName}
 AppVersion={#MyAppVersion}
-AppVerName=Foundation Sunshine Game Streaming Server v{#MyAppVersion}
+AppVerName={#MyAppDisplayName} v{#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}/support
@@ -48,8 +49,8 @@ WizardImageAlphaFormat=defined
 WizardSizePercent=120
 ; 版本信息 (VersionInfoVersion requires X.X.X.X format, use AppVersion for display)
 VersionInfoCompany={#MyAppPublisher}
-VersionInfoDescription=Foundation Sunshine Game Streaming Server
-VersionInfoProductName={#MyAppName}
+VersionInfoDescription={#MyAppDisplayName}
+VersionInfoProductName={#MyAppDisplayName}
 ; 其他
 LicenseFile={#MyLicenseFile}
 ; Use our validated InstallDir registry value instead of Inno Setup's implicit previous app dir.
@@ -73,13 +74,14 @@ SetupLogging=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "chinesetraditional"; MessagesFile: "@CMAKE_SOURCE_DIR@\cmake\packaging\ChineseTraditional.isl"
 Name: "chinesesimplified"; MessagesFile: "@CMAKE_SOURCE_DIR@\cmake\packaging\ChineseSimplified.isl"
 
 [CustomMessages]
 ; English custom messages
-english.ComponentApplication=Sunshine main application
+english.ComponentApplication=Foundation Sunshine Lite main application
 english.ComponentAssets=Required assets (shaders, web UI)
-english.ComponentGUI=Sunshine GUI and tray agent (required)
+english.ComponentGUI=Control panel and tray agent (required)
 english.ComponentVDD=Zako Virtual Display Driver (HDR)
 english.ComponentAutostart=Launch on system startup
 english.ComponentFirewall=Add firewall exclusions
@@ -90,7 +92,7 @@ english.TypeRecommended=Recommended (virtual display + firewall + autostart)
 english.TypeFull=Full installation (all components)
 english.TypeCompact=Compact installation (core only)
 english.TypeCustom=Custom installation
-english.ComponentVDDDesc=Required for headless/remote streaming without a physical monitor. Enables HDR passthrough.
+english.ComponentVDDDesc=Optional: stream using a virtual display with HDR support. Physical-display streaming does not require this driver.
 english.ComponentFirewallDesc=Allows Moonlight clients to discover and connect to this PC over the network.
 english.ComponentAutostartDesc=Sunshine will start automatically when Windows boots. Recommended for always-on streaming.
 english.ComponentGamepadDesc=Emulates Xbox controller for games. Install only if you need gamepad input from the client.
@@ -106,13 +108,13 @@ english.StatusInstallVmouse=Installing virtual mouse driver...
 english.StatusInstallService=Installing system service...
 english.StatusAutostart=Configuring autostart...
 english.FinishOpenDocs=Open documentation
-english.FinishLaunchGUI=Launch Sunshine GUI
+english.FinishLaunchGUI=Open Control Panel
 english.MsgOldNSISDetected=Detected a previous NSIS installation of Sunshine.%nIt must be uninstalled before continuing.%n%nUninstall the previous version now?
 english.MsgOldNSISFailed=The previous installation could not be fully removed.%nPlease uninstall it manually and try again.
 english.MsgOldNSISStaleRegistry=The previous installation files appear to be gone, but registry entries remain.%nClean up the leftover registry and continue installing?
 english.MsgOldNSISCleanupFailed=Failed to clean up the previous installation registry entries.%nPlease remove HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Sunshine manually and try again.
-english.MsgServiceInstallFailed=Sunshine service could not be installed or verified.%n%nThe files were installed and are kept. Reboot and run "{app}\scripts\install-service.bat" as administrator, or use the repair action in the Sunshine GUI. The installer log in your TEMP folder has the details.
-english.MsgVDDInstallFailed=The virtual display driver could not be installed or verified.%n%nSunshine was installed but has not been started. Review the installer log in your TEMP folder, then use the repair action in the Sunshine GUI.
+english.MsgServiceInstallFailed=Sunshine service could not be installed or verified.%n%nThe files were installed and are kept. Reboot and run "{app}\scripts\install-service.bat" as administrator, or use the repair action in the control panel. The installer log in your TEMP folder has the details.
+english.MsgVDDInstallFailed=The virtual display driver could not be installed or verified.%n%nSunshine was installed but has not been started. Review the installer log in your TEMP folder, then use the repair action in the control panel.
 english.MsgUninstallGamepad=Do you want to remove Virtual Gamepad?
 english.MsgUninstallData=Do you want to remove all data in %1?%n(This includes configuration, cover images, and settings)
 english.StatusStoppingService=Stopping Sunshine service...
@@ -121,7 +123,7 @@ english.StatusStoppingProcesses=Stopping running Sunshine processes...
 ; Chinese Simplified custom messages
 chinesesimplified.ComponentApplication=Sunshine 主程序
 chinesesimplified.ComponentAssets=必要资源（着色器、Web UI）
-chinesesimplified.ComponentGUI=Sunshine GUI 与托盘代理（必需）
+chinesesimplified.ComponentGUI=控制面板与托盘代理（必需）
 chinesesimplified.ComponentVDD=Zako 虚拟显示驱动（HDR）
 chinesesimplified.ComponentAutostart=开机自动启动
 chinesesimplified.ComponentFirewall=添加防火墙规则
@@ -132,7 +134,7 @@ chinesesimplified.TypeRecommended=推荐安装（虚拟显示器 + 防火墙 + �
 chinesesimplified.TypeFull=完全安装（所有组件）
 chinesesimplified.TypeCompact=简洁安装（仅核心）
 chinesesimplified.TypeCustom=自定义安装
-chinesesimplified.ComponentVDDDesc=无头/远程串流必装。无需外接显示器即可串流，支持 HDR 直通。
+chinesesimplified.ComponentVDDDesc=选用：使用支持 HDR 的虚拟显示器串流。使用实体显示器串流时不需要此驱动。
 chinesesimplified.ComponentFirewallDesc=允许 Moonlight 客户端通过网络发现并连接本机。
 chinesesimplified.ComponentAutostartDesc=Windows 启动时自动运行 Sunshine。推荐常驻串流使用。
 chinesesimplified.ComponentGamepadDesc=模拟 Xbox 手柄。仅需要从客户端传入手柄输入时安装。
@@ -148,17 +150,73 @@ chinesesimplified.StatusInstallVmouse=正在安装虚拟鼠标驱动...
 chinesesimplified.StatusInstallService=正在安装系统服务...
 chinesesimplified.StatusAutostart=正在配置自动启动...
 chinesesimplified.FinishOpenDocs=打开使用文档
-chinesesimplified.FinishLaunchGUI=启动 Sunshine 管理界面
+chinesesimplified.FinishLaunchGUI=打开控制面板
 chinesesimplified.MsgOldNSISDetected=检测到旧版 NSIS 安装的 Sunshine。%n需要先卸载才能继续。%n%n是否现在卸载旧版本？
 chinesesimplified.MsgOldNSISFailed=无法完全移除旧版安装。%n请手动卸载后重试。
 chinesesimplified.MsgOldNSISStaleRegistry=旧版本的文件已经不存在，但注册表中仍残留旧版的卸载信息。%n是否清理残留的注册表项并继续安装？
 chinesesimplified.MsgOldNSISCleanupFailed=清理旧版注册表项失败。%n请手动删除 HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Sunshine 后重试。
-chinesesimplified.MsgServiceInstallFailed=无法安装或验证 Sunshine 服务。%n%n程序文件已经装好并会保留。请重启后以管理员身份运行 "{app}\scripts\install-service.bat"，或在 Sunshine 管理界面里使用修复功能。详细信息见 TEMP 目录下的安装日志。
-chinesesimplified.MsgVDDInstallFailed=无法安装或验证虚拟显示驱动。%n%nSunshine 已安装但尚未启动。请检查 TEMP 目录中的安装日志，然后在 Sunshine 管理界面中使用修复功能。
+chinesesimplified.MsgServiceInstallFailed=无法安装或验证 Sunshine 服务。%n%n程序文件已经装好并会保留。请重启后以管理员身份运行 "{app}\scripts\install-service.bat"，或在控制面板里使用修复功能。详细信息见 TEMP 目录下的安装日志。
+chinesesimplified.MsgVDDInstallFailed=无法安装或验证虚拟显示驱动。%n%nSunshine 已安装但尚未启动。请检查 TEMP 目录中的安装日志，然后在控制面板中使用修复功能。
 chinesesimplified.MsgUninstallGamepad=是否移除虚拟手柄（ViGEmBus）？
 chinesesimplified.MsgUninstallData=是否删除 %1 中的所有数据？%n（包括配置文件、封面图片和设置）
 chinesesimplified.StatusStoppingService=正在停止 Sunshine 服务...
 chinesesimplified.StatusStoppingProcesses=正在停止 Sunshine 进程...
+
+; Chinese Traditional custom messages
+chinesetraditional.ComponentApplication=Foundation Sunshine Lite 主程式
+chinesetraditional.ComponentAssets=必要資源（著色器、Web 介面）
+chinesetraditional.ComponentGUI=控制面板與系統匣代理程式（必要）
+chinesetraditional.ComponentVDD=Zako 虛擬顯示器驅動程式（HDR）
+chinesetraditional.ComponentAutostart=開機自動啟動
+chinesetraditional.ComponentFirewall=新增防火牆規則
+chinesetraditional.ComponentGamepad=虛擬遊戲控制器（ViGEmBus）
+chinesetraditional.ComponentVmouse=虛擬滑鼠驅動程式（UMDF）
+chinesetraditional.ComponentTools=診斷工具（dxgi-info、audio-info）
+chinesetraditional.TypeRecommended=建議安裝（虛擬顯示器、防火牆與開機啟動）
+chinesetraditional.TypeFull=完整安裝（所有元件）
+chinesetraditional.TypeCompact=精簡安裝（僅核心元件）
+chinesetraditional.TypeCustom=自訂安裝
+chinesetraditional.ComponentVDDDesc=選用：使用支援 HDR 的虛擬顯示器串流。使用實體顯示器串流時不需要此驅動程式。
+chinesetraditional.ComponentFirewallDesc=允許 Moonlight 用戶端透過網路探索並連線至這台電腦。
+chinesetraditional.ComponentAutostartDesc=Windows 開機時自動啟動 Sunshine。適合需要隨時接受串流連線的主機。
+chinesetraditional.ComponentGamepadDesc=模擬 Xbox 遊戲控制器。僅在需要接收用戶端的遊戲控制器輸入時安裝。
+chinesetraditional.ComponentVmouseDesc=提供平順的滑鼠絕對定位。可依滑鼠操作需求選擇安裝。
+chinesetraditional.ComponentToolsDesc=使用 dxgi-info、audio-info 排查顯示與音訊問題。
+chinesetraditional.StatusResetPermissions=正在重設檔案權限...
+chinesetraditional.StatusUpdatePath=正在更新系統 PATH...
+chinesetraditional.StatusMigrateConfig=正在移轉設定檔...
+chinesetraditional.StatusFirewall=正在設定防火牆規則...
+chinesetraditional.StatusInstallVDD=正在安裝虛擬顯示器驅動程式...
+chinesetraditional.StatusInstallGamepad=正在安裝虛擬遊戲控制器...
+chinesetraditional.StatusInstallVmouse=正在安裝虛擬滑鼠驅動程式...
+chinesetraditional.StatusInstallService=正在安裝系統服務...
+chinesetraditional.StatusAutostart=正在設定開機啟動...
+chinesetraditional.FinishOpenDocs=開啟使用文件
+chinesetraditional.FinishLaunchGUI=開啟控制面板
+chinesetraditional.MsgOldNSISDetected=偵測到使用 NSIS 安裝的舊版 Sunshine。%n必須先解除安裝才能繼續。%n%n是否現在解除安裝舊版？
+chinesetraditional.MsgOldNSISFailed=無法完整移除舊版安裝。%n請手動解除安裝後重試。
+chinesetraditional.MsgOldNSISStaleRegistry=舊版安裝檔案已不存在，但仍有登錄項目。%n是否清除殘留的登錄項目並繼續安裝？
+chinesetraditional.MsgOldNSISCleanupFailed=無法清除舊版登錄項目。%n請手動移除 HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Sunshine 後重試。
+chinesetraditional.MsgServiceInstallFailed=無法安裝或驗證 Sunshine 服務。%n%n程式檔案已安裝並會保留。請重新開機後，以系統管理員身分執行 "{app}\scripts\install-service.bat"，或在控制面板中使用修復功能。詳細資訊請見 TEMP 資料夾中的安裝記錄。
+chinesetraditional.MsgVDDInstallFailed=無法安裝或驗證虛擬顯示器驅動程式。%n%nSunshine 已安裝，但尚未啟動。請檢查 TEMP 資料夾中的安裝記錄，再從控制面板使用修復功能。
+chinesetraditional.MsgUninstallGamepad=是否移除虛擬遊戲控制器（ViGEmBus）？
+chinesetraditional.MsgUninstallData=是否刪除 %1 中的所有資料？%n（包括設定檔、封面圖片與設定）
+chinesetraditional.StatusStoppingService=正在停止 Sunshine 服務...
+chinesetraditional.StatusStoppingProcesses=正在停止執行中的 Sunshine 程式...
+
+; Localized product labels
+english.ControlPanelShortcut=Foundation Sunshine Lite Control Panel
+english.ToolsShortcut=Foundation Sunshine Lite Tools
+english.BrandTagline=Open Source  |  Low-latency
+english.ExitCodeLabel=Exit code
+chinesesimplified.ControlPanelShortcut=Foundation Sunshine Lite 控制面板
+chinesesimplified.ToolsShortcut=Foundation Sunshine Lite 工具
+chinesesimplified.BrandTagline=开源  |  低延迟
+chinesesimplified.ExitCodeLabel=退出代码
+chinesetraditional.ControlPanelShortcut=Foundation Sunshine Lite 控制面板
+chinesetraditional.ToolsShortcut=Foundation Sunshine Lite 工具
+chinesetraditional.BrandTagline=開放原始碼  |  低延遲
+chinesetraditional.ExitCodeLabel=結束代碼
 
 [Types]
 Name: "recommended"; Description: "{cm:TypeRecommended}"
@@ -284,14 +342,14 @@ Source: "{#MySourceDir}\tools\audio-info.exe"; DestDir: "{app}\tools"; Flags: ig
 
 [Icons]
 ; Start Menu shortcuts
-Name: "{group}\Sunshine"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--shortcut"; IconFilename: "{app}\{#MyAppExeName}"
-Name: "{group}\Sunshine GUI"; Filename: "{app}\assets\gui\{#MyAppGUIExeName}"; IconFilename: "{app}\assets\gui\{#MyAppGUIExeName}"; Components: gui
-Name: "{group}\Sunshine Tools"; Filename: "{app}\tools"; IconFilename: "{app}\{#MyAppExeName}"
-Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
+Name: "{group}\{#MyAppDisplayName}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--shortcut"; IconFilename: "{app}\{#MyAppExeName}"
+Name: "{group}\{cm:ControlPanelShortcut}"; Filename: "{app}\assets\gui\{#MyAppGUIExeName}"; IconFilename: "{app}\assets\gui\{#MyAppGUIExeName}"; Components: gui
+Name: "{group}\{cm:ToolsShortcut}"; Filename: "{app}\tools"; IconFilename: "{app}\{#MyAppExeName}"
+Name: "{group}\{cm:UninstallProgram,{#MyAppDisplayName}}"; Filename: "{uninstallexe}"
 
 ; Desktop shortcuts (optional, controlled by Tasks)
-Name: "{autodesktop}\Sunshine"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--shortcut"; IconFilename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-Name: "{autodesktop}\Sunshine GUI"; Filename: "{app}\assets\gui\{#MyAppGUIExeName}"; IconFilename: "{app}\assets\gui\{#MyAppGUIExeName}"; Tasks: desktopicon; Components: gui
+Name: "{autodesktop}\{#MyAppDisplayName}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--shortcut"; IconFilename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autodesktop}\{cm:ControlPanelShortcut}"; Filename: "{app}\assets\gui\{#MyAppGUIExeName}"; IconFilename: "{app}\assets\gui\{#MyAppGUIExeName}"; Tasks: desktopicon; Components: gui
 
 ; Install dir shortcut
 Name: "{app}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--shortcut"; IconFilename: "{app}\{#MyAppExeName}"
@@ -440,7 +498,7 @@ begin
   if (VDDResultCode = 101) and (not WizardSilent) then
   begin
     Detail := CustomMessage('MsgVDDInstallFailed') + #13#10 + #13#10 +
-              'Exit code: ' + IntToStr(ResultCode);
+              CustomMessage('ExitCodeLabel') + ': ' + IntToStr(ResultCode);
     MsgBox(Detail, mbError, MB_OK);
   end;
 end;
@@ -538,7 +596,7 @@ begin
   BrandTitle.Parent := BrandPanel;
   BrandTitle.Left := 16;
   BrandTitle.Top := 12;
-  BrandTitle.Caption := 'Foundation Game Streaming Server';
+  BrandTitle.Caption := '{#MyAppDisplayName}';
   BrandTitle.Font.Name := 'Segoe UI';
   BrandTitle.Font.Size := 10;
   BrandTitle.Font.Color := $0060C0;
@@ -548,7 +606,7 @@ begin
   BrandSubtitle.Parent := BrandPanel;
   BrandSubtitle.Left := 16;
   BrandSubtitle.Top := 38;
-  BrandSubtitle.Caption := 'v' + '{#MyAppVersion}' + '  |  Open Source  |  Low-latency';
+  BrandSubtitle.Caption := 'v' + '{#MyAppVersion}' + '  |  ' + CustomMessage('BrandTagline');
   BrandSubtitle.Font.Name := 'Segoe UI';
   BrandSubtitle.Font.Size := 9;
   BrandSubtitle.Font.Color := $666666;
