@@ -12,7 +12,7 @@
 | 客户端扩展 | `src/nvhttp/`、`src/rtsp.cpp`、`src/stream.cpp` | 协商、控制通道、动态参数、显示控制与网络反馈 |
 | 视频与 HDR | `src/video*`、`src/hdr/`、`src/platform/windows/display*` | 色彩、元数据、显示目标和捕获路径 |
 | 网络自适应 | `src/streaming/` | 码率与丢包保护 |
-| 浏览器 WebUI | `src_assets/common/assets/web/` | 管理界面、配置、应用列表与网页诊断 |
+| 浏览器 WebUI | `src_assets/common/sunshine-control-panel/webui/` | 管理界面、配置、应用列表与网页诊断 |
 | 桌面 GUI | `src_assets/common/sunshine-control-panel/` | 设备中心、本地扫描、组件与系统操作；独立仓库子模块 |
 | 设备组件 | `src/platform/windows/ds5/`、`src/remote_usb/` 等 | 可选设备、传输与进程生命周期 |
 | 自动化检查 | `tests/`、WebUI `tests/`、`.github/workflows/` | 单元、集成与构建检查 |

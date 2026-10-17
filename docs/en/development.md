@@ -12,7 +12,7 @@ Choose an entry point by the module you need to change. The host service, browse
 | Client extensions | `src/nvhttp/`, `src/rtsp.cpp`, `src/stream.cpp` | Negotiation, control channel, dynamic parameters, displays, and feedback |
 | Video and HDR | `src/video*`, `src/hdr/`, `src/platform/windows/display*` | Color, metadata, display targets, and capture |
 | Network adaptation | `src/streaming/` | Bitrate and video loss protection |
-| Browser WebUI | `src_assets/common/assets/web/` | Configuration, application lists, and browser diagnostics |
+| Browser WebUI | `src_assets/common/sunshine-control-panel/webui/` | Configuration, application lists, and browser diagnostics |
 | Desktop GUI | `src_assets/common/sunshine-control-panel/` | Device center, local scanning, components, and system operations; a separate repository submodule |
 | Device components | `src/platform/windows/ds5/`, `src/remote_usb/`, and others | Optional devices, transports, and process lifecycles |
 | Verification | `tests/`, WebUI `tests/`, `.github/workflows/` | Unit tests, integration checks, and builds |

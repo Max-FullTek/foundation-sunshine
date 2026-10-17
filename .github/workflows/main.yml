@@ -189,18 +189,26 @@ jobs:
         with:
           node-version-file: .node-version
           cache: npm
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: src_assets/common/sunshine-control-panel/package-lock.json
 
       - name: Build Web UI
         shell: pwsh
         run: |
-          npm ci
+          npm ci --prefix src_assets/common/sunshine-control-panel
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run lint:webui
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run test:webui
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           New-Item -ItemType Directory -Force -Path build | Out-Null
           $env:SUNSHINE_SOURCE_ASSETS_DIR = "${{ github.workspace }}\src_assets"
           $env:SUNSHINE_ASSETS_DIR = "${{ github.workspace }}\build"
           npm run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Test core and UI package isolation
+        shell: pwsh
+        run: ./tests/tools/test-ui-packaging.ps1
 
       - name: Cache compiler objects
         uses: actions/cache/restore@v6
@@ -427,6 +435,17 @@ jobs:
           # move
           mv ./cpack_artifacts/Sunshine.exe ../artifacts/sunshine-windows-installer.exe
           mv ./cpack_artifacts/Sunshine.zip ../artifacts/sunshine-windows-portable.zip
+
+      - name: Export reusable core runtime
+        shell: pwsh
+        run: ./scripts/export-core-runtime.ps1 -StagingDirectory build/inno_staging -InstallerScript build/sunshine_installer.iss -OutputDirectory core-runtime
+
+      - name: Upload reusable core runtime
+        uses: actions/upload-artifact@v7
+        with:
+          name: sunshine-core-windows-x64
+          path: core-runtime/*
+          if-no-files-found: error
 
       - name: Rename release assets
         shell: msys2 {0}

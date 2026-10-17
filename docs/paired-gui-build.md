@@ -1,8 +1,10 @@
 # Verified Windows GUI package pairing
 
-This fork's Windows workflow requires a successful Control Panel build at the
-committed `src_assets/common/sunshine-control-panel` gitlink. It does not download
-an unrelated latest GUI release when the paired build is unavailable.
+This fork's Windows workflow requires a successful Control Panel build matching
+the committed `src_assets/common/sunshine-control-panel` gitlink's native inputs.
+An earlier build may be reused only when the changes are confined to WebUI-owned
+paths; shared renderer code, dependencies, Rust, build scripts and CI must match.
+It does not download an unrelated latest GUI release when a compatible build is unavailable.
 
 Build the Panel commit first with its `build.yml` workflow and `create_release=false`.
 The repository comes from the Panel URL in `.gitmodules`. Supply `gui_run_id`
@@ -12,6 +14,13 @@ successful matching run. The run must contain an unexpired
 The script checks repository, commit, run ID and ZIP SHA-256 before extraction.
 It keeps the GUI executable and native plugin together and writes
 `paired-build.json`, which is included in the installer and portable package.
+The manifest records the requested `commit`, actual `binary_commit`, and native
+input fingerprint so reuse does not misrepresent which source produced the EXE.
+
+For the core/UI packaging split and the conservative fast-package workflow, see
+[WebUI development](WEBUI_DEVELOPMENT.md#webui-與核心分離). Core API and runtime
+hosting remain unchanged; the new workflow only replaces independently built UI
+files and verifies that the reused core executable has the same SHA-256.
 
 This establishes provenance from the selected Actions producer; a manifest and
 ZIP from the same producer do not independently prove that producer is benign.

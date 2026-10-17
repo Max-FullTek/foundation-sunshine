@@ -100,20 +100,21 @@ class Configuration(unittest.TestCase):
     def test_web_ui_is_incremental_and_recovers_missing_outputs(self):
         log = self.project / 'npm-calls.txt'
         npm = self.launcher('npm-stub', '''import pathlib, sys
-root = pathlib.Path(__file__).parent
-with (root / 'npm-calls.txt').open('a') as log: log.write(sys.argv[1] + '\\n')
+root = pathlib.Path.cwd()
+with (root / '../../../npm-calls.txt').open('a') as log: log.write(sys.argv[1] + '\\n')
 if sys.argv[1] == 'ci': (root / 'node_modules').mkdir(exist_ok=True)
 else:
     destination = pathlib.Path(sys.argv[sys.argv.index('--outDir') + 1])
     destination.mkdir(parents=True, exist_ok=True)
-    for page in (root / 'src_assets/common/assets/web').glob('*.html'):
+    for page in (root / 'webui').glob('*.html'):
         (destination / page.name).write_text(page.read_text())
 ''')
-        self.write('package.json', '{}\n')
-        lock = self.write('package-lock.json', '{}\n')
-        self.write('src_assets/common/assets/web/index.html', 'page\n')
-        script = self.write('src_assets/common/assets/web/main.js', 'initial\n')
-        self.write('scripts/vite/vite.config.js', '// config\n')
+        self.write('src_assets/common/sunshine-control-panel/package.json', '{}\n')
+        lock = self.write('src_assets/common/sunshine-control-panel/package-lock.json', '{}\n')
+        self.write('src_assets/common/sunshine-control-panel/webui/index.html', 'page\n')
+        script = self.write('src_assets/common/sunshine-control-panel/webui/main.js', 'initial\n')
+        shared = self.write('src_assets/common/sunshine-control-panel/src/renderer/shared.js', 'initial\n')
+        self.write('src_assets/common/sunshine-control-panel/scripts/webui/vite/vite.config.js', '// config\n')
         self.cmake_project(f'set(NPM "{npm.as_posix()}")\nset(SUNSHINE_SOURCE_ASSETS_DIR "${{PROJECT_SOURCE_DIR}}/src_assets")\n'
                    'set(NPM_SOURCE_ASSETS_DIR "${SUNSHINE_SOURCE_ASSETS_DIR}")\nset(NPM_ASSETS_DIR "${PROJECT_BINARY_DIR}")\n'
                    + self.include('cmake/targets/web_ui.cmake'))
@@ -126,11 +127,13 @@ else:
         self.assertEqual(calls(), [])
         script.write_text('edited\n')
         self.assertEqual(calls(), ['run'])
+        shared.write_text('edited shared renderer\n')
+        self.assertEqual(calls(), ['run'])
         lock.write_text('{"changed":true}\n')
         self.assertEqual(calls(), ['ci', 'run'])
         (self.build / 'assets/web/index.html').unlink()
         self.assertEqual(calls(), ['run'])
-        shutil.rmtree(self.project / 'node_modules')
+        shutil.rmtree(self.project / 'src_assets/common/sunshine-control-panel/node_modules')
         self.assertEqual(calls(), ['ci', 'run'])
 
     def test_asset_copies_preserve_paths_edits_additions_and_removals(self):

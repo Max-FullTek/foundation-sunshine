@@ -145,7 +145,7 @@ npm run i18n:validate
 Commit all locale file changes together:
 
 ```bash
-git add src_assets/common/assets/web/public/assets/locale/*.json
+git add src_assets/common/sunshine-control-panel/webui/public/assets/locale/*.json
 git commit -m "Add translation keys for new feature"
 ```
 
@@ -224,7 +224,7 @@ The i18n validation is integrated into the GitHub Actions CI pipeline via `.gith
 ## File Structure
 
 ```
-src_assets/common/assets/web/public/assets/locale/
+src_assets/common/sunshine-control-panel/webui/public/assets/locale/
 ├── en.json       # Base locale (English) - source of truth
 ├── zh.json       # Chinese (Simplified)
 ├── zh_TW.json    # Chinese (Traditional)
@@ -254,7 +254,7 @@ npm run i18n:sync  # Auto-add missing keys
 **Solution:**
 ```bash
 npm run i18n:format  # Auto-format all files
-git add src_assets/common/assets/web/public/assets/locale/*.json
+git add src_assets/common/sunshine-control-panel/webui/public/assets/locale/*.json
 git commit -m "Format locale files"
 ```
 

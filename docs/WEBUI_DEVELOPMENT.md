@@ -1,5 +1,19 @@
 # WebUI 开发指南
 
+## WebUI 與核心分離
+
+WebUI 原始碼、翻譯、測試與 Vite 設定由控制面板子庫管理。核心仍提供既有 HTTP API、登入驗證與靜態網頁服務，網址與桌面代理流程不變。
+
+在主庫根目錄執行 `npm ci --prefix src_assets/common/sunshine-control-panel` 安裝前端依賴；原有 `npm run build`、`npm run lint:webui`、`npm run test:webui` 是相容入口，會委派給面板庫，網頁輸出到 `build/assets/web`。在面板庫可直接執行 `npm run build:webui`，輸出到 `build/webui`；`npm run build:renderer` 另行建置桌面內嵌頁面，不需要與 WebUI 一起建置。
+
+完整主庫 CI 保持原有建置與驗證，另輸出 `sunshine-core-windows-x64` 產物。首次搬移後須先各完成一次面板原生建置與主庫完整建置，建立可重用基準。後續僅更新面板 gitlink 時，可執行 `Package UI with verified core`，指定該完整建置的 `core_run_id`。流程會建置及測試新版 WebUI、選取原生輸入完全相同的 GUI 產物、自動組合安裝包與便攜包，不編譯 C++ 或 Rust，也不發布 Release。
+
+核心重用會比對主庫全部已提交檔案，僅排除面板 gitlink；任何其他主庫變更都必須完整建置。GUI 重用僅排除 `webui/`、`scripts/webui/`、WebUI ESLint 與 Crowdin 設定；共享 renderer、依賴、Rust 或面板 CI 變更均要求新 GUI 建置。產物必須來自成功的指定工作流程，並通過來源與 SHA-256 驗證；過期、缺失或不相容就停止。面板 CI 的 `webui_only` 選項可以只建置網頁，供純 WebUI 修改驗證使用。
+
+此階段使用安裝包更新，不提供安裝後的 WebUI 自動熱更新。安裝程式仍可能停止／重啟服務，請在串流結束後更新；只有建置與打包不會影響正在使用的安裝。核心執行檔與版本沿用基準版本，`ui-package.json` 另外記錄核心與介面來源，勿將其視為重新編譯的新核心。
+
+快速打包成功與雜湊相同，仍不能取代首次設定、瀏覽器／桌面操作、配對、VDD 與串流的安裝版驗收。
+
 Sunshine 包含一个现代化的 Web 控制界面，基于 Vue 3 和 Composition API 构建，遵循 Vue 最佳实践。
 
 > **注意**: 本文档已更新以反映最新的项目结构优化。所有页面已重构为使用 Composition API 和模块化架构。
@@ -57,7 +71,7 @@ npm run lint:webui
 
 ### 3. 代码静态检查
 
-WebUI 使用 ESLint 检查 `src_assets/common/assets/web` 下的 JavaScript 和 Vue 单文件组件。提交前必须运行：
+WebUI 使用 ESLint 检查 `src_assets/common/sunshine-control-panel/webui` 下的 JavaScript 和 Vue 单文件组件。提交前必须运行：
 
 ```bash
 npm run lint:webui
@@ -80,7 +94,7 @@ CI 会在 WebUI 测试和构建之前执行相同的检查。Lint 失败时应�
 ## 📁 项目结构
 
 ```
-src_assets/common/assets/web/
+src_assets/common/sunshine-control-panel/webui/
 ├── views/                    # 页面组件（路由级组件）
 │   ├── Home.vue             # 首页
 │   ├── Apps.vue             # 应用管理页面
@@ -590,8 +604,8 @@ trackEvents.gpuReported({ platform: 'windows', adapters: [...] })
 
 ### Vite 配置
 
-- **开发配置**: `scripts/vite/vite.dev.config.js` - 开发环境专用配置
-- **生产配置**: `scripts/vite/vite.config.js` - 生产构建配置
+- **开发配置**: `src_assets/common/sunshine-control-panel/scripts/webui/vite/vite.dev.config.js` - 开发环境专用配置
+- **生产配置**: `src_assets/common/sunshine-control-panel/scripts/webui/vite/vite.config.js` - 生产构建配置
 - **EJS模板**: 支持HTML模板预处理
 - **路径别名**: 配置了Vue和Bootstrap的路径别名
 - **Rolldown支持**: 使用 Rolldown 作为实验性打包器（更快）

@@ -1,0 +1,109 @@
+name: Package UI with verified core
+
+on:
+  workflow_dispatch:
+    inputs:
+      core_run_id:
+        description: 'Successful full build run containing an unchanged core-runtime artifact'
+        type: string
+        required: true
+      gui_run_id:
+        description: 'Optional native Panel run; unchanged native inputs may reuse an earlier build'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+        env:
+          GIT_CONFIG_COUNT: '1'
+          GIT_CONFIG_KEY_0: core.longpaths
+          GIT_CONFIG_VALUE_0: 'true'
+
+      - name: Download and verify core provenance
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CORE_RUN_ID: ${{ inputs.core_run_id }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:CORE_RUN_ID -notmatch '^[0-9]+$') { throw 'Invalid core run ID' }
+          $json = gh api "repos/$env:GITHUB_REPOSITORY/actions/runs/$env:CORE_RUN_ID"
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot read core run' }
+          $run = $json | ConvertFrom-Json
+          if ($run.conclusion -ne 'success' -or $run.path -ne '.github/workflows/main.yml' -or $run.event -eq 'pull_request') {
+            throw 'Select a successful trusted full build'
+          }
+          gh run download $env:CORE_RUN_ID --name sunshine-core-windows-x64 --dir core-runtime
+          if ($LASTEXITCODE -ne 0) { throw 'Core artifact unavailable; run a full build' }
+          $manifest = Get-Content core-runtime/core-build.json -Raw | ConvertFrom-Json
+          if ($manifest.repository -ne $env:GITHUB_REPOSITORY -or $manifest.commit -ne $run.head_sha -or [string]$manifest.run_id -ne $env:CORE_RUN_ID) {
+            throw 'Core provenance mismatch'
+          }
+          . ./scripts/build-inputs.ps1
+          if ($manifest.inputs -ne (Get-BuildInputFingerprint)) { throw 'Core inputs changed; run the full build' }
+
+      - name: Test core and UI package isolation
+        shell: pwsh
+        run: ./tests/tools/test-ui-packaging.ps1
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: src_assets/common/sunshine-control-panel/package-lock.json
+
+      - name: Build and test WebUI only
+        shell: pwsh
+        run: |
+          npm ci --prefix src_assets/common/sunshine-control-panel
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run lint:webui
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run test:webui
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Fetch compatible native Panel
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GUI_RUN_ID: ${{ inputs.gui_run_id }}
+        run: |
+          $arguments = @{ Destination = 'paired-gui' }
+          if ($env:GUI_RUN_ID) { $arguments.RunId = $env:GUI_RUN_ID }
+          ./scripts/fetch-paired-gui.ps1 @arguments
+
+      - name: Assemble without compiling core
+        shell: pwsh
+        run: ./scripts/repackage-ui.ps1 -CoreDirectory core-runtime -WebUiDirectory build/assets/web -GuiDirectory paired-gui -OutputDirectory ui-package
+
+      - name: Install verified Inno Setup
+        shell: pwsh
+        run: ./scripts/install-inno-setup.ps1
+
+      - name: Build installer and portable package
+        shell: pwsh
+        run: |
+          & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' ui-package/installer.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          New-Item -ItemType Directory -Path artifacts | Out-Null
+          Move-Item -LiteralPath ui-package/Sunshine.exe -Destination "artifacts/Sunshine.ui-$env:GITHUB_RUN_NUMBER.WindowsInstaller.exe"
+          Copy-Item -LiteralPath ui-package/Sunshine.Portable-x64.zip -Destination "artifacts/Sunshine.ui-$env:GITHUB_RUN_NUMBER.Portable-x64.zip"
+          Copy-Item -LiteralPath ui-package/runtime/assets/ui-package.json -Destination artifacts/ui-package.json
+          ./scripts/generate-checksums.ps1 -Path artifacts
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sunshine-ui-windows-x64
+          path: artifacts/*
+          if-no-files-found: error

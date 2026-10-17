@@ -6,7 +6,7 @@ Read our contribution guide in our organization level
 
 ### Web UI
 * The Web UI uses [Vite](https://vitejs.dev) as its build system.
-* The HTML pages used by the Web UI are found in `./src_assets/common/assets/web`.
+* The HTML pages used by the Web UI are found in `./src_assets/common/sunshine-control-panel/webui`.
 * [EJS](https://www.npmjs.com/package/ejs) is used as a templating system for the pages
   (check `template_header.html` and `template_header_main.html`).
 * The Style System is provided by [Bootstrap](https://getbootstrap.com).
@@ -58,7 +58,7 @@ next release.
 Sunshine uses [Vue I18n](https://vue-i18n.intlify.dev) for localizing the UI.
 The following is a simple example of how to use it.
 
-* Add the string to the `./src_assets/common/assets/web/public/assets/locale/en.json` file, in English.
+* Add the string to the `./src_assets/common/sunshine-control-panel/webui/public/assets/locale/en.json` file, in English.
   ```json
   {
    "index": {
