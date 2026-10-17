@@ -5,6 +5,7 @@
 #define MyAppName "@CMAKE_PROJECT_NAME@"
 #define MyAppDisplayName "Foundation Sunshine Lite"
 #define MyAppVersion "@CPACK_PACKAGE_VERSION@"
+#define MyAppDisplayVersion "@INNO_DISPLAY_VERSION@"
 #define MyAppPublisher "@CPACK_PACKAGE_VENDOR@"
 #define MyAppURL "@CMAKE_PROJECT_HOMEPAGE_URL@"
 #define MyAppExeName "@CMAKE_PROJECT_NAME@.exe"
@@ -20,7 +21,7 @@
 AppId={{B16E5C0D-7B8A-4E3B-9F1A-2D4C6E8F0A1B}
 AppName={#MyAppDisplayName}
 AppVersion={#MyAppVersion}
-AppVerName={#MyAppDisplayName} v{#MyAppVersion}
+AppVerName={#MyAppDisplayName} {#MyAppDisplayVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}/support
@@ -614,7 +615,7 @@ begin
   BrandSubtitle.Parent := BrandPanel;
   BrandSubtitle.Left := 16;
   BrandSubtitle.Top := 38;
-  BrandSubtitle.Caption := 'v' + '{#MyAppVersion}' + '  |  ' + CustomMessage('BrandTagline');
+  BrandSubtitle.Caption := '{#MyAppDisplayVersion}' + '  |  ' + CustomMessage('BrandTagline');
   BrandSubtitle.Font.Name := 'Segoe UI';
   BrandSubtitle.Font.Size := 9;
   BrandSubtitle.Font.Color := $666666;

@@ -26,6 +26,8 @@ endif()
 message(STATUS "Found Inno Setup: ${ISCC_EXECUTABLE}")
 
 # Configure the .iss template with CMake variables
+include("${CMAKE_CURRENT_LIST_DIR}/installer_display_version.cmake")
+sunshine_installer_display_version("${CPACK_PACKAGE_VERSION}" INNO_DISPLAY_VERSION)
 set(INNO_STAGING_DIR "${CMAKE_BINARY_DIR}/inno_staging")
 # Use a separate variable so we don't overwrite CMAKE_INSTALL_PREFIX
 set(CMAKE_INSTALL_PREFIX_SAVED "${CMAKE_INSTALL_PREFIX}")
