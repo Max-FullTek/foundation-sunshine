@@ -40,7 +40,6 @@ extern "C" {
   #define DATA_SHARDS_MAX 255
 #endif
 
-#include "client_fingerprint.h"
 #include "config.h"
 #include "streaming/fec.h"
 #include "display_device/display_device.h"
@@ -540,7 +539,6 @@ namespace stream {
     std::string client_cert_uuid;
     bool use_vdd {false};
     int custom_screen_mode {-1};
-    bool highly_suspected_unknown_client {false};
     std::string app_name;
     int app_id = 0;
 
@@ -3445,8 +3443,7 @@ namespace stream {
       });
       tray_state::add_session(
         session.launch_session_id,
-        session.client_name,
-        session.highly_suspected_unknown_client
+        session.client_name
       );
 
       // 仅控制流会话不触发 streaming_will_start 回调，因为它们不传输视频/音频
@@ -3470,12 +3467,6 @@ namespace stream {
           {"resolution", std::to_string(session.config.monitor.width) + "x" + std::to_string(session.config.monitor.height)},
           {"fps", std::to_string(session.config.monitor.framerate)}
         };
-        if (session.highly_suspected_unknown_client) {
-          extra_data.emplace(
-            "client_integrity_warning",
-            client_fingerprint::suspicious_client_code
-          );
-        }
         webhook::send_event_async(webhook::event_t {
           .type = webhook::event_type_t::NV_SESSION_START,
           .timestamp = webhook::get_current_timestamp(),
@@ -3515,7 +3506,6 @@ namespace stream {
       session->client_cert_uuid = launch_session.client_cert_uuid;
       session->use_vdd = launch_session.use_vdd;
       session->custom_screen_mode = launch_session.custom_screen_mode;
-      session->highly_suspected_unknown_client = launch_session.highly_suspected_unknown_client;
       session->app_id = launch_session.appid;
       session->app_name = proc::proc.get_app_name(launch_session.appid);
 

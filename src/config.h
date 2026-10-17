@@ -186,11 +186,6 @@ namespace config {
 
     int pair_max_attempts;  // Max PIN pairing attempts per IP within 60s window. 0 disables limiting.
 
-    // Signed, warning-only client fingerprint rule feed.
-    bool client_fingerprint_remote_rules;
-    std::string client_fingerprint_rules_url;
-    std::string client_fingerprint_rules_certificate;
-    int client_fingerprint_rules_refresh_hours;
   };
 
   struct input_t {

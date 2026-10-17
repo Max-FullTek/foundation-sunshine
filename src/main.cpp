@@ -17,7 +17,6 @@
 #include <rs.h>
 
 // local includes
-#include "client_fingerprint.h"
 #include "confighttp.h"
 #include "display_device/session.h"
 #include "entry_handler.h"
@@ -445,15 +444,6 @@ main(int argc, char *argv[]) {
     return -1;
   }
 
-  auto client_fingerprint_deinit_guard = client_fingerprint::init({
-    .remote_rules_enabled = config::nvhttp.client_fingerprint_remote_rules,
-    .signing_certificate = file_handler::path_from_utf8(config::nvhttp.client_fingerprint_rules_certificate),
-    .cache_file = platf::appdata() / "client-fingerprint-rules.json",
-  });
-  if (!client_fingerprint_deinit_guard) {
-    BOOST_LOG(warning) << "Client fingerprint rules are unavailable; using built-in rules";
-  }
-
   std::unique_ptr<platf::deinit_t> mDNS;
   std::future<void> sync_mDNS;
   if (config::sunshine.flags[config::flag::MDNS_BROADCAST]) {
@@ -560,7 +550,6 @@ main(int argc, char *argv[]) {
   lifetime::start_shutdown_watchdog();
   BOOST_LOG(info) << "Shutdown requested; allowing up to 10 seconds for cleanup"sv;
 
-  client_fingerprint_deinit_guard.reset();
 
   // Stop outbound callbacks before joining inbound servers. This cancels
   // queued tests while their response objects are still valid.

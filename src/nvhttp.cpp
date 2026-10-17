@@ -38,7 +38,6 @@
 #include <openssl/ssl.h>
 
 // local includes
-#include "client_fingerprint.h"
 #include "config.h"
 #include "confighttp.h"
 #include "display_device/session.h"
@@ -591,8 +590,6 @@ namespace nvhttp {
     }
     const rtsp_stream::launch_preparation_guard_t launch_preparation;
     launch_session->rtsp_peer_address = net::addr_to_normalized_string(request->remote_endpoint().address());
-    const auto fingerprint_match = client_fingerprint::match_client(args);
-    launch_session->highly_suspected_unknown_client = fingerprint_match.suspicious;
 
     // Store the stable client certificate UUID in the launch environment.
     std::string client_cert_uuid = get_client_cert_uuid_from_request(request);
@@ -601,14 +598,6 @@ namespace nvhttp {
       launch_session->env["SUNSHINE_CLIENT_CERT_UUID"] = client_cert_uuid;
     }
     hdr::resolve_session_target(*launch_session);
-    if (launch_session->highly_suspected_unknown_client) {
-      BOOST_LOG(warning) << "Launch request highly resembles a known unauthorized client fork"
-                         << " [client_uuid=" << client_cert_uuid
-                         << ", client_name=" << launch_session->client_name
-                         << ", rule_id=" << fingerprint_match.rule_id
-                         << ", rule_revision=" << fingerprint_match.revision
-                         << ", rule_source=" << fingerprint_match.source << ']';
-    }
 
     if (rtsp_stream::session_count() == 0) {
       // We want to prepare display only if there are no active sessions at
@@ -667,12 +656,6 @@ namespace nvhttp {
         { "fps", std::to_string(launch_session->fps) },
         { "host_audio", launch_session->host_audio ? "true" : "false" }
       };
-      if (launch_session->highly_suspected_unknown_client) {
-        extra_data.emplace(
-          "client_integrity_warning",
-          client_fingerprint::suspicious_client_code
-        );
-      }
       webhook::send_event_async(webhook::event_t {
         .type = webhook::event_type_t::NV_APP_LAUNCH,
         .timestamp = webhook::get_current_timestamp(),
@@ -770,8 +753,6 @@ namespace nvhttp {
                             "Update Moonlight-Switch to a version that sends mode on Resume when one is available."sv;
     }
     launch_session->rtsp_peer_address = net::addr_to_normalized_string(request->remote_endpoint().address());
-    const auto fingerprint_match = client_fingerprint::match_client(args);
-    launch_session->highly_suspected_unknown_client = fingerprint_match.suspicious;
 
     // Get client certificate UUID (stable client identifier) and store it in env
     std::string client_cert_uuid = get_client_cert_uuid_from_request(request);
@@ -780,14 +761,6 @@ namespace nvhttp {
       launch_session->env["SUNSHINE_CLIENT_CERT_UUID"] = client_cert_uuid;
     }
     hdr::resolve_session_target(*launch_session);
-    if (launch_session->highly_suspected_unknown_client) {
-      BOOST_LOG(warning) << "Resume request highly resembles a known unauthorized client fork"
-                         << " [client_uuid=" << client_cert_uuid
-                         << ", client_name=" << launch_session->client_name
-                         << ", rule_id=" << fingerprint_match.rule_id
-                         << ", rule_revision=" << fingerprint_match.revision
-                         << ", rule_source=" << fingerprint_match.source << ']';
-    }
 
     if (no_active_sessions) {
       // Prepare before publishing the ticket so the handshake expiration
@@ -828,12 +801,6 @@ namespace nvhttp {
         { "fps", std::to_string(launch_session->fps) },
         { "host_audio", launch_session->host_audio ? "true" : "false" }
       };
-      if (launch_session->highly_suspected_unknown_client) {
-        extra_data.emplace(
-          "client_integrity_warning",
-          client_fingerprint::suspicious_client_code
-        );
-      }
       webhook::send_event_async(webhook::event_t {
         .type = webhook::event_type_t::NV_APP_RESUME,
         .timestamp = webhook::get_current_timestamp(),

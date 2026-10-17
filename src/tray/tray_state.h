@@ -48,7 +48,6 @@ namespace tray_state {
   struct client_session_t {
     std::uint32_t id = 0;
     std::string client_name;
-    bool highly_suspected_unknown_client = false;
   };
 
   struct state_t {
@@ -108,8 +107,7 @@ namespace tray_state {
   void
   add_session(
     std::uint32_t session_id,
-    const std::string &client_name,
-    bool highly_suspected_unknown_client = false
+    const std::string &client_name
   );
 
   void

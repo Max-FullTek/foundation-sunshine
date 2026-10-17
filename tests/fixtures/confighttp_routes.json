@@ -303,14 +303,6 @@
     "method": "POST"
   },
   {
-    "pattern": "^/api/tray/client-fingerprint-rules$",
-    "method": "GET"
-  },
-  {
-    "pattern": "^/api/tray/client-fingerprint-rules$",
-    "method": "POST"
-  },
-  {
     "pattern": "^/api/widget/state$",
     "method": "GET"
   },

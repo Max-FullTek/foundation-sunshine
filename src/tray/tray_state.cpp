@@ -283,8 +283,7 @@ namespace tray_state {
   void
   add_session(
     const std::uint32_t session_id,
-    const std::string &client_name,
-    const bool highly_suspected_unknown_client
+    const std::string &client_name
   ) {
     {
       std::lock_guard lock { state_mutex };
@@ -297,18 +296,15 @@ namespace tray_state {
         });
 
       if (position != current_state.sessions.end() && position->id == session_id) {
-        if (position->client_name == client_name &&
-            position->highly_suspected_unknown_client == highly_suspected_unknown_client) {
+        if (position->client_name == client_name) {
           return;
         }
         position->client_name = client_name;
-        position->highly_suspected_unknown_client = highly_suspected_unknown_client;
       }
       else {
         current_state.sessions.insert(position, {
           session_id,
-          client_name,
-          highly_suspected_unknown_client
+          client_name
         });
       }
       touch_locked();
@@ -397,7 +393,6 @@ namespace tray_state {
       sessions.push_back({
         { "id", session.id },
         { "client_name", session.client_name },
-        { "highly_suspected_unknown_client", session.highly_suspected_unknown_client },
       });
     }
 
