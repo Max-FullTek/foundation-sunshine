@@ -68,15 +68,6 @@ Function GetParent
         Exch $0
 FunctionEnd
 
-; Finish Page 自定义选项
-; 复选框1: 打开使用教程（默认勾选）
-!define MUI_FINISHPAGE_RUN
-!define MUI_FINISHPAGE_RUN_TEXT '打开使用教程'
-!define MUI_FINISHPAGE_RUN_FUNCTION OpenDocumentation
-
-Function OpenDocumentation
-    ExecShell 'open' 'https://docs.qq.com/aio/DSGdQc3htbFJjSFdO?p=DXpTjzl2kZwBjN7jlRMkRJ'
-FunctionEnd
 ")
 
 # ==============================================================================
@@ -338,7 +329,7 @@ set(CPACK_NSIS_COMPRESSOR_OPTIONS "/SOLID")  # Solid compression for smaller fil
 # Support Links and Documentation
 # ==============================================================================
 
-set(CPACK_NSIS_HELP_LINK "https://alkaidlab.com/sunshine/docs")
+set(CPACK_NSIS_HELP_LINK "https://github.com/AlkaidLab/foundation-sunshine")
 set(CPACK_NSIS_URL_INFO_ABOUT "${CMAKE_PROJECT_HOMEPAGE_URL}")
 set(CPACK_NSIS_CONTACT "${CMAKE_PROJECT_HOMEPAGE_URL}/support")
 

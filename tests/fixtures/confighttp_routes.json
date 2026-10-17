@@ -231,14 +231,6 @@
     "method": "POST"
   },
   {
-    "pattern": "^/steam-api/.+$",
-    "method": "GET"
-  },
-  {
-    "pattern": "^/steam-store/.+$",
-    "method": "GET"
-  },
-  {
     "pattern": "^/images/sunshine.ico$",
     "method": "GET"
   },

@@ -474,7 +474,7 @@ namespace system_tray {
   };
 
   auto tray_star_project_cb = [](struct tray_menu *item) {
-    platf::open_url_in_browser("https://www.alkaidlab.com/");
+    platf::open_url_in_browser("https://github.com/AlkaidLab/foundation-sunshine");
   };
 
   auto tray_visit_project_sunshine_cb = [](struct tray_menu *item) {

@@ -13,7 +13,6 @@
 #include "src/confighttp/configuration.h"
 #include "src/confighttp/diagnostics.h"
 #include "src/confighttp/integrations.h"
-#include "src/confighttp/proxies.h"
 #include "src/confighttp/runtime.h"
 #include "src/network.h"
 #include "src/text_context/http.h"
@@ -32,7 +31,6 @@ namespace confighttp {
     confighttp::diagnostics::register_routes(server);
     confighttp::runtime::register_routes(server);
     confighttp::integrations::register_routes(server);
-    confighttp::proxies::register_routes(server);
 
     // Clipboard sync routes are registered in a sibling module so the
     // Web UI server doesn't grow further. They reuse our
