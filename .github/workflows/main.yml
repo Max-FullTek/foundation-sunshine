@@ -16,6 +16,10 @@ on:
       - master
   workflow_dispatch:
     inputs:
+      core_run_id:
+        description: 'Optional successful full-build run: reuse its unchanged core and package UI only; blank builds everything'
+        type: string
+        default: ''
       gui_run_id:
         description: 'Optional Panel run ID; otherwise discover a verified build for the pinned Panel commit'
         type: string
@@ -39,6 +43,17 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
+  package_ui:
+    name: Package UI without recompiling core
+    if: github.event_name == 'workflow_dispatch' && inputs.core_run_id != ''
+    uses: ./.github/workflows/package-ui.yml
+    permissions:
+      contents: read
+      actions: read
+    with:
+      core_run_id: ${{ inputs.core_run_id }}
+      gui_run_id: ${{ inputs.gui_run_id }}
+
   setup_release:
     name: Setup Release
     outputs:
@@ -89,6 +104,7 @@ jobs:
 
   build_win:
     name: Windows
+    if: inputs.core_run_id == '' || inputs.core_run_id == null
     needs: setup_release
     permissions:
       contents: read

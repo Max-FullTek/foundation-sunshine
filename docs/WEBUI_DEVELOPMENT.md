@@ -6,7 +6,7 @@ WebUI 原始碼、翻譯、測試與 Vite 設定由控制面板子庫管理。�
 
 在主庫根目錄執行 `npm ci --prefix src_assets/common/sunshine-control-panel` 安裝前端依賴；原有 `npm run build`、`npm run lint:webui`、`npm run test:webui` 是相容入口，會委派給面板庫，網頁輸出到 `build/assets/web`。在面板庫可直接執行 `npm run build:webui`，輸出到 `build/webui`；`npm run build:renderer` 另行建置桌面內嵌頁面，不需要與 WebUI 一起建置。
 
-完整主庫 CI 保持原有建置與驗證，另輸出 `sunshine-core-windows-x64` 產物。首次搬移後須先各完成一次面板原生建置與主庫完整建置，建立可重用基準。後續僅更新面板 gitlink 時，可執行 `Package UI with verified core`，指定該完整建置的 `core_run_id`。流程會建置及測試新版 WebUI、選取原生輸入完全相同的 GUI 產物、自動組合安裝包與便攜包，不編譯 C++ 或 Rust，也不發布 Release。
+完整主庫 CI 保持原有建置與驗證，另輸出 `sunshine-core-windows-x64` 產物。首次搬移後須先各完成一次面板原生建置與主庫完整建置，建立可重用基準。後續僅更新面板 gitlink 時，可執行主庫既有的 `Build and Release`，指定該完整建置的 `core_run_id`（留空則完整建置），由它呼叫 `Package UI with verified core`。流程會建置及測試新版 WebUI、選取原生輸入完全相同的 GUI 產物、自動組合安裝包與便攜包，不編譯 C++ 或 Rust，也不發布 Release。
 
 核心重用會比對主庫全部已提交檔案，僅排除面板 gitlink；任何其他主庫變更都必須完整建置。GUI 重用僅排除 `webui/`、`scripts/webui/`、WebUI ESLint 與 Crowdin 設定；共享 renderer、依賴、Rust 或面板 CI 變更均要求新 GUI 建置。產物必須來自成功的指定工作流程，並通過來源與 SHA-256 驗證；過期、缺失或不相容就停止。面板 CI 的 `webui_only` 選項可以只建置網頁，供純 WebUI 修改驗證使用。
 
