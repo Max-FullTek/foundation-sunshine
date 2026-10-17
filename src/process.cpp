@@ -7,6 +7,7 @@
 #include "process.h"
 
 #include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include <string>
 #include <thread>
@@ -660,55 +661,32 @@ namespace proc {
     return ss.str();
   }
 
+  bool
+  is_local_app_image_path(const std::string &path) {
+    const auto separator = [](char value) { return value == '/' || value == '\\'; };
+    if (path.size() >= 2 && separator(path[0]) && separator(path[1])) {
+      return false;
+    }
+    const auto colon = path.find(':');
+    if (colon == std::string::npos) {
+      return true;
+    }
+    // A drive-qualified local path is the only accepted colon syntax.
+    return colon == 1 && path.size() > 2 &&
+           std::isalpha(static_cast<unsigned char>(path[0])) &&
+           (path[2] == '/' || path[2] == '\\') &&
+           path.find(':', colon + 1) == std::string::npos;
+  }
+
   std::string
   validate_app_image_path(std::string app_image_path) {
     if (app_image_path.empty()) {
       return DEFAULT_APP_IMAGE_PATH;
     }
 
-    // 处理网络图片下载
-    if (app_image_path.find("http://") == 0 || app_image_path.find("https://") == 0) {
-      try {
-        std::string original_url = app_image_path;
-        
-        // 移除查询参数
-        size_t query_start = app_image_path.find('?');
-        if (query_start != std::string::npos) {
-          app_image_path = app_image_path.substr(0, query_start);
-        }
-
-        // 从URL提取文件名
-        auto hash = std::hash<std::string>{}(original_url);
-        auto ext = std::filesystem::path(app_image_path).extension().string();
-        
-        // 安全检查：验证文件扩展名
-        std::string ext_lower = ext;
-        std::transform(ext_lower.begin(), ext_lower.end(), ext_lower.begin(), ::tolower);
-        if (ext_lower != ".png" && ext_lower != ".jpg" && ext_lower != ".jpeg" && 
-            ext_lower != ".bmp" && ext_lower != ".webp" && ext_lower != ".ico") {
-          BOOST_LOG(warning) << "Blocked download of non-image extension: " << ext;
-          return DEFAULT_APP_IMAGE_PATH; 
-        }
-
-        std::string filename = "url_" + std::to_string(hash) + (ext.empty() ? ".png" : ext);
-        
-        // 保存到本地 covers 目录 (User requested to save to covers instead of assets)
-        auto local_path = platf::appdata() / "covers" / filename;
-        
-        // 如果文件不存在则下载
-        if (!std::filesystem::exists(local_path)) {
-          BOOST_LOG(info) << "Downloading image from URL: " << original_url;
-          if (!http::download_public_cover_image(original_url, file_handler::path_to_utf8(local_path))) {
-            BOOST_LOG(warning) << "Failed to download image (or rejected by magic check) from URL: " << original_url;
-            return DEFAULT_APP_IMAGE_PATH;
-          }
-        }
-        
-        app_image_path = file_handler::path_to_utf8(local_path);
-      } catch (const std::exception& e) {
-        BOOST_LOG(warning) << "Error processing image URL: " << e.what();
-        return DEFAULT_APP_IMAGE_PATH;
-      }
+    if (!is_local_app_image_path(app_image_path)) {
+      BOOST_LOG(warning) << "Remote application cover sources are disabled";
+      return DEFAULT_APP_IMAGE_PATH;
     }
 
     // 特殊处理：桌面壁纸

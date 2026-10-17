@@ -14,10 +14,24 @@
 // local imports
 #include <src/file_handler.h>
 #include <src/httpcommon.h>
+#include <src/process.h>
 
 #include "../tests_common.h"
 
 struct UrlEscapeTest: testing::TestWithParam<std::tuple<std::string, std::string>> {};
+
+TEST(AppImageSourceTest, KeepsLocalImagesAndRejectsNetworkSourcesBeforeAccess) {
+  for (const auto &path : {"", "desktop", "cover.png", "C:\\Games\\cover.png", "/home/player/cover.png"}) {
+    EXPECT_TRUE(proc::is_local_app_image_path(path)) << path;
+  }
+  const auto fallback = proc::validate_app_image_path("");
+  for (const auto &path : {"https://example.invalid/cover.png", "HTTP://example.invalid/cover.png",
+         "//server/cover.png", "\\\\server\\cover.png", "/\\server\\cover.png", "file://server/cover.png",
+         "javascript:alert(1)", "C:\\cover.png:stream"}) {
+    EXPECT_FALSE(proc::is_local_app_image_path(path)) << path;
+    EXPECT_EQ(proc::validate_app_image_path(path), fallback);
+  }
+}
 
 TEST_P(UrlEscapeTest, Run) {
   const auto &[input, expected] = GetParam();
@@ -62,19 +76,3 @@ INSTANTIATE_TEST_SUITE_P(
   testing::Values(
     std::make_tuple("https://httpbin.org/base64/aGVsbG8h", "hello.txt"),
     std::make_tuple("https://httpbin.org/redirect-to?url=/base64/aGVsbG8h", "hello-redirect.txt")));
-
-TEST(ImageDownloadTest, FailedDownloadPreservesExistingFile) {
-  const auto root = std::filesystem::temp_directory_path() /
-                    ("sunshine-cover-test-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
-  const auto destination = root / "cover.png";
-  const auto utf8_root = file_handler::path_to_utf8(root);
-  const auto utf8_destination = file_handler::path_to_utf8(destination);
-
-  ASSERT_TRUE(file_handler::make_directory(utf8_root));
-  ASSERT_EQ(file_handler::write_file(utf8_destination.c_str(), "existing-cover"), 0);
-  EXPECT_FALSE(http::download_image_with_magic_check("://invalid", utf8_destination));
-  EXPECT_EQ(file_handler::read_file(utf8_destination.c_str()), "existing-cover");
-
-  std::error_code ignored;
-  std::filesystem::remove_all(root, ignored);
-}

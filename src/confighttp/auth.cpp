@@ -64,9 +64,7 @@ namespace confighttp {
   bool
   authorize_browser_request(resp_https_t response, req_https_t request) {
     const auto path = std::string_view { request->path };
-    if (!path.starts_with("/api/") &&
-        !path.starts_with("/steam-api/") &&
-        !path.starts_with("/steam-store/")) {
+    if (!path.starts_with("/api/")) {
       return true;
     }
 

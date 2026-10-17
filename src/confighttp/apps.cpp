@@ -94,6 +94,11 @@ namespace confighttp::apps {
         auto &input_edit_node = inputTree.get_child("editApp"s);
 
         const auto normalize_gamepad = [&](pt::ptree &app_node) {
+          if (!proc::is_local_app_image_path(app_node.get<std::string>("image-path", ""))) {
+            outputTree.put("status", "false");
+            outputTree.put("error", "Application covers must use local image paths");
+            return false;
+          }
           auto gamepad = app_node.get_optional<std::string>("gamepad");
           if (gamepad && gamepad->empty()) {
             app_node.erase("gamepad");
@@ -437,47 +442,44 @@ namespace confighttp::apps {
       }
       auto url = inputTree.get("url", "");
 
+      if (!url.empty()) {
+        outputTree.put("error", "Remote cover URLs are no longer supported; select a local image");
+        return;
+      }
+
       const std::string coverdir = file_handler::path_to_utf8(platf::appdata() / "covers");
       file_handler::make_directory(coverdir);
 
       const auto cover_path = file_handler::path_from_utf8(coverdir) / (http::url_escape(key) + ".png");
       const std::string path = file_handler::path_to_utf8(cover_path);
-      if (!url.empty()) {
-        if (!http::download_public_cover_image(url, path)) {
-          outputTree.put("error", "Failed to download public HTTPS cover");
-          return;
-        }
+      // Limit base64 data size to prevent memory exhaustion
+      // (10MB decoded to about 7.5MB, enough for cover images)
+      constexpr std::size_t MAX_COVER_BASE64_SIZE = 10 * 1024 * 1024;
+      auto base64_str = inputTree.get<std::string>("data");
+      if (base64_str.size() > MAX_COVER_BASE64_SIZE) {
+        outputTree.put("error", "Cover image too large (max 10MB)");
+        return;
       }
-      else {
-        // Limit base64 data size to prevent memory exhaustion
-        // (10MB decoded to about 7.5MB, enough for cover images)
-        constexpr std::size_t MAX_COVER_BASE64_SIZE = 10 * 1024 * 1024;
-        auto base64_str = inputTree.get<std::string>("data");
-        if (base64_str.size() > MAX_COVER_BASE64_SIZE) {
-          outputTree.put("error", "Cover image too large (max 10MB)");
-          return;
-        }
-        std::string data;
-        try {
-          data = web::decode_base64(base64_str);
-        }
-        catch (const std::invalid_argument &e) {
-          outputTree.put("error", e.what());
-          return;
-        }
+      std::string data;
+      try {
+        data = web::decode_base64(base64_str);
+      }
+      catch (const std::invalid_argument &e) {
+        outputTree.put("error", e.what());
+        return;
+      }
 
-        std::ofstream imgfile(file_handler::path_from_utf8(path), std::ios::binary);
-        if (!imgfile.is_open()) {
-          outputTree.put("error", "Failed to create file");
-          return;
-        }
-        imgfile.write(data.data(), (int) data.size());
-        imgfile.close();
+      std::ofstream imgfile(file_handler::path_from_utf8(path), std::ios::binary);
+      if (!imgfile.is_open()) {
+        outputTree.put("error", "Failed to create file");
+        return;
+      }
+      imgfile.write(data.data(), (int) data.size());
+      imgfile.close();
 
-        if (imgfile.fail()) {
-          outputTree.put("error", "Failed to write file");
-          return;
-        }
+      if (imgfile.fail()) {
+        outputTree.put("error", "Failed to write file");
+        return;
       }
       outputTree.put("path", path);
     }

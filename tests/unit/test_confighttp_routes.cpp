@@ -338,6 +338,17 @@ TEST_F(ConfigHttpRoutes, ChunkedCoverUploadPreservesDecodedBinaryAndRejectsCross
   EXPECT_EQ(decoded, std::string("\0\1\2\xfftail", 8));
 }
 
+TEST_F(ConfigHttpRoutes, RemoteCoverUrlReturnsBadRequestWithoutCreatingAFile) {
+  const auto key = directory.filename().string();
+  const auto path = platf::appdata() / "covers" / (key + ".png");
+  ASSERT_FALSE(std::filesystem::exists(path));
+  auto client = connect();
+  const auto body = nlohmann::json { { "key", key }, { "url", "https://example.invalid/cover.png" } }.dump();
+  const auto response = client->request("POST", "/api/covers/upload", body, { { "Content-Type", "application/json" } });
+  EXPECT_EQ(response->status_code, "400 Bad Request");
+  EXPECT_FALSE(std::filesystem::exists(path));
+}
+
 TEST_F(ConfigHttpRoutes, InvalidBase64CoverReturnsBadRequestWithoutCreatingAFile) {
   const auto key = directory.filename().string();
   const auto path = platf::appdata() / "covers" / (key + ".png");

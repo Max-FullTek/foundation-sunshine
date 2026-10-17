@@ -159,6 +159,8 @@ namespace proc {
 
   std::string
   validate_app_image_path(std::string app_image_path);
+
+  bool is_local_app_image_path(const std::string &path);
   void
   refresh(const std::string &file_name);
   std::optional<proc::proc_t>
