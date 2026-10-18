@@ -16,9 +16,9 @@ http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://127.0.0.1:8081')
     if (sample && url.pathname === '/connection-preview') {
       const base = new URL('../src_assets/common/sunshine-control-panel/', import.meta.url)
-      const [shell, palette, style, markup, script] = await Promise.all([
+      const [shell, palette, style, markup, script, radar] = await Promise.all([
         'src-tauri/error-404.html', 'src/renderer/shared/palette.css', 'src/renderer/shared/connection-screen.css',
-        'src/renderer/shared/connection-screen.html', 'src/renderer/shared/connection-screen.js',
+        'src/renderer/shared/connection-screen.html', 'src/renderer/shared/connection-screen.js', 'src/renderer/shared/connection-radar.html',
       ].map(path => readFile(new URL(path, base), 'utf8')))
       const controls = `<form id="preview-controls" style="padding:10px 18px;font:14px system-ui;display:flex;gap:16px;flex-wrap:wrap;background:#fff;color:#17212f">
         <label>配色 <select name="theme"><option value="light">淺色</option><option value="dark">深色</option></select></label>
@@ -39,6 +39,7 @@ http.createServer(async (req, res) => {
       `
       const body = shell.replace('/* PALETTE_STYLE */', palette).replace('/* CONNECTION_STYLE */', style)
         .replace('<!-- CONNECTION_MARKUP -->', markup)
+        .replace('<!-- CONNECTION_RADAR -->', radar)
         .replace('data-connection-autostart', 'id="connection-preview"')
         .replace('<body>', '<body>' + controls)
         .replace('/* CONNECTION_SCRIPT */', script + setup)
