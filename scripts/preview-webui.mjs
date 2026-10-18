@@ -49,7 +49,10 @@ http.createServer(async (req, res) => {
       if (sample) {
         const data = url.pathname === '/api/config' ? sampleConfig
           : url.pathname === '/api/configLocale' ? { locale:'zh_TW' }
-          : url.pathname === '/api/apps' ? { apps:[{ name:'Desktop', cmd:'', 'image-path':'' }] }
+          : url.pathname === '/api/apps' ? { apps:[
+            { name:'Desktop', cmd:'', 'image-path':'desktop' },
+            { name:'沒有封面範例', cmd:'example.exe', 'image-path':'', elevated:true, 'auto-detach':true },
+          ] }
           : url.pathname === '/api/clients/list' ? { named_certs:[] }
           : url.pathname === '/api/logs' ? '[2026-10-17 00:00:00.000]: Info: Preview sample only' : {}
         res.writeHead(200, { 'Content-Type': typeof data === 'string' ? 'text/plain' : 'application/json' })
@@ -61,6 +64,11 @@ http.createServer(async (req, res) => {
       })
       res.writeHead(response.status, { 'Content-Type': response.headers.get('content-type') || 'text/plain' })
       res.end(Buffer.from(await response.arrayBuffer()))
+      return
+    }
+    if (sample && url.pathname === '/boxart/desktop.png') {
+      res.writeHead(200, { 'Content-Type':'image/png' })
+      res.end(await readFile(new URL('../src_assets/common/assets/desktop.png', import.meta.url)))
       return
     }
     let path = decodeURIComponent(url.pathname)
