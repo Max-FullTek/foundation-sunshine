@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises'
 import { resolve, extname, sep } from 'node:path'
 const root = resolve(process.env.SUNSHINE_ASSETS_DIR || 'build', 'assets/web')
 const sample = process.argv.includes('--sample')
+const samplePairingStarted = Date.now()
 const sampleConfig = { platform:'windows', version:'介面預覽', sunshine_name:'Sunshine Lite 範例主機', locale:'zh_TW', setup_wizard_completed:true, adapters:[], display_devices:[], controller:'enabled', keyboard:'enabled', mouse:'enabled' }
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.ico': 'image/x-icon' }
 http.createServer(async (req, res) => {
@@ -48,7 +49,10 @@ http.createServer(async (req, res) => {
     if (url.pathname.startsWith('/api/')) {
       if (sample) {
         const data = url.pathname === '/api/config' ? sampleConfig
-          : url.pathname === '/api/configLocale' ? { locale:'zh_TW' }
+          : url.pathname === '/api/configLocale' ? { locale:'zh_TW', has_account: !req.headers.referer?.includes('first-run=1') }
+          : url.pathname === '/api/pairing/requests' ? { requests: req.headers.referer?.includes('pairing=waiting') ? [
+            { id:'preview-request', name:'Moonlight 範例裝置', address:'192.168.1.20', received_at:samplePairingStarted, remaining_seconds:Math.max(0, 300 - Math.floor((Date.now() - samplePairingStarted) / 1000)) },
+          ].filter(request => request.remaining_seconds > 0) : [] }
           : url.pathname === '/api/apps' ? { apps:[
             { name:'Desktop', cmd:'', 'image-path':'desktop' },
             { name:'沒有封面範例', cmd:'example.exe', 'image-path':'', elevated:true, 'auto-detach':true },

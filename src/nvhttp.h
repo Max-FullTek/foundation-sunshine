@@ -174,7 +174,9 @@ namespace nvhttp {
    * @examples_end
    */
   bool
-  pin(std::string pin, std::string name);
+  pin(std::string pin, std::string name, const std::string &request_id = {});
+
+  nlohmann::json get_pending_pairing_requests();
 
   /**
    * @brief Remove single client.

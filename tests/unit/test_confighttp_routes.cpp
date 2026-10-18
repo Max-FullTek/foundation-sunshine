@@ -131,7 +131,7 @@ namespace {
   }
 }  // namespace
 
-TEST_F(ConfigHttpRoutes, PreservesThePreSplitRouteInventory) {
+TEST_F(ConfigHttpRoutes, PreservesTheRegisteredRouteInventory) {
   std::ifstream file(std::filesystem::path(SUNSHINE_SOURCE_DIR) / "tests/fixtures/confighttp_routes.json");
   ASSERT_TRUE(file.is_open());
   const auto fixture = nlohmann::json::parse(file);
@@ -168,6 +168,22 @@ TEST_F(ConfigHttpRoutes, LocaleRemainsPublicAndKeepsLegacyResponseShape) {
   const auto body = nlohmann::json::parse(response->content.string());
   EXPECT_EQ(body["status"], "true");
   EXPECT_EQ(body["locale"], config::sunshine.locale);
+  EXPECT_EQ(body["has_account"], "false");
+}
+
+TEST_F(ConfigHttpRoutes, PendingPairingReturnsAnEmptyListWithoutAnExternalRequest) {
+  auto client = connect();
+  const auto response = client->request("GET", "/api/pairing/requests");
+  EXPECT_EQ(response->status_code, "200 OK");
+  const auto body = nlohmann::json::parse(response->content.string());
+  ASSERT_TRUE(body["requests"].is_array());
+  EXPECT_TRUE(body["requests"].empty());
+}
+
+TEST_F(ConfigHttpRoutes, PendingPairingRejectsCrossSiteReads) {
+  auto client = connect();
+  const auto response = client->request("GET", "/api/pairing/requests", "", { { "Origin", "https://evil.example" } });
+  EXPECT_EQ(response->status_code, "403 Forbidden");
 }
 
 TEST_F(ConfigHttpRoutes, LocalAuthenticatedApiKeepsItsResponseShape) {

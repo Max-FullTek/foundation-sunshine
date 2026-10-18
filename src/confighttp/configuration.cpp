@@ -113,6 +113,7 @@ namespace confighttp::configuration {
 
       outputTree.put("status", "true");
       outputTree.put("locale", config::sunshine.locale);
+        outputTree.put("has_account", !config::sunshine.username.empty());
     }
 
     void

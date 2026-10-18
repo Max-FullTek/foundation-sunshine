@@ -1,5 +1,9 @@
 [
   {
+    "pattern": "^/api/pairing/requests$",
+    "method": "GET"
+  },
+  {
     "pattern": "^/$",
     "method": "GET"
   },

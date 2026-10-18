@@ -130,6 +130,11 @@ namespace nvhttp {
     static client_t client_root;
     static std::string last_pair_name;
     static std::string pending_pin_unique_id;
+    static std::string pending_pin_request_id;
+    static std::string pending_pin_address;
+    static std::string pending_pin_name;
+    static std::chrono::steady_clock::time_point pending_pin_deadline;
+    static std::int64_t pending_pin_received_at = 0;
     static std::mutex map_id_sess_mutex;
     static std::shared_mutex client_state_mutex;
     static pair_rate_limiter_t pair_rate_limit;
@@ -334,12 +339,18 @@ namespace nvhttp {
               system_tray::update_tray_require_pin(last_pair_name);
 #endif
               pending_pin_unique_id = ptr->second.client.uniqueID;
+              pending_pin_request_id = uuid_util::uuid_t::generate().string();
+              pending_pin_address = net::addr_to_normalized_string(remote_addr);
+              pending_pin_name = last_pair_name;
+              pending_pin_deadline = std::chrono::steady_clock::now() + pending_pin_timeout;
+              pending_pin_received_at = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
               ptr->second.async_insert_pin.response = std::move(response);
 
               const auto pending_id = pending_pin_unique_id;
-              task_pool.pushDelayed([pending_id]() {
+              const auto request_id = pending_pin_request_id;
+              task_pool.pushDelayed([pending_id, request_id]() {
                 std::lock_guard<std::mutex> map_lock(map_id_sess_mutex);
-                if (pending_pin_unique_id != pending_id) {
+                if (pending_pin_request_id != request_id || pending_pin_unique_id != pending_id) {
                   return;
                 }
 
@@ -712,9 +723,13 @@ namespace nvhttp {
   }
 
   bool
-  pin(std::string pin, std::string name) {
+  pin(std::string pin, std::string name, const std::string &request_id) {
     pt::ptree tree;
     std::lock_guard<std::mutex> map_lock(map_id_sess_mutex);
+    if (std::chrono::steady_clock::now() >= pending_pin_deadline ||
+        (!request_id.empty() && request_id != pending_pin_request_id)) {
+      return false;
+    }
     if (map_id_sess.empty()) {
       return false;
     }
@@ -762,6 +777,18 @@ namespace nvhttp {
     pending_pin_unique_id.clear();
     tray_state::clear_pairing_required();
     return true;
+  }
+
+  nlohmann::json
+  get_pending_pairing_requests() {
+    std::lock_guard<std::mutex> map_lock(map_id_sess_mutex);
+    auto requests = nlohmann::json::array();
+    const auto remaining = std::chrono::duration_cast<std::chrono::seconds>(pending_pin_deadline - std::chrono::steady_clock::now()).count();
+    if (!pending_pin_unique_id.empty() && remaining > 0 && map_id_sess.count(pending_pin_unique_id)) {
+      requests.push_back({ { "id", pending_pin_request_id }, { "name", pending_pin_name },
+        { "address", pending_pin_address }, { "received_at", pending_pin_received_at }, { "remaining_seconds", remaining } });
+    }
+    return requests;
   }
 
   nlohmann::json

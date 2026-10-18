@@ -89,16 +89,13 @@ namespace confighttp::assets {
     void
     getWelcomePage(resp_https_t response, req_https_t request) {
       // 如果已经有用户名，要求认证后才能访问（防止未授权访问）
-      // 认证通过后重定向到首页，认证失败则拒绝访问
+      // 已有帳號仍可回訪歡迎頁，但必須先通過原有認證。
       if (!config::sunshine.username.empty()) {
         if (!authenticate(response, request)) {
           return;  // authenticate已经发送了401响应
         }
-        // 认证通过，重定向到首页
-        send_redirect(response, request, "/");
-        return;
       }
-      // 只有在没有用户名时才显示welcome页面（首次设置）
+      // 首次建立帳號時維持公開入口；既有帳號已在上方完成認證。
       getHtmlPage(response, request, "welcome.html", false);
     }
 
