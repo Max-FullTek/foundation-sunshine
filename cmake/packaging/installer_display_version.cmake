@@ -12,7 +12,9 @@ function(sunshine_installer_display_version version output)
         endif()
     endif()
     if(display MATCHES "^0\\.0\\.0($|\\.)" OR display MATCHES "^manual-")
-        set(label "Development build")
+        # Untagged builds have no public version to display. Keep their full
+        # revision in AppVersion without adding a channel label to the name.
+        set(label "")
     elseif(display MATCHES "^([0-9][0-9][0-9][0-9]\\.[0-9]+)\\.[0-9]+")
         set(label "v${CMAKE_MATCH_1}")
     else()

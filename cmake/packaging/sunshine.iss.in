@@ -21,7 +21,11 @@
 AppId={{B16E5C0D-7B8A-4E3B-9F1A-2D4C6E8F0A1B}
 AppName={#MyAppDisplayName}
 AppVersion={#MyAppVersion}
+#if MyAppDisplayVersion != ""
 AppVerName={#MyAppDisplayName} {#MyAppDisplayVersion}
+#else
+AppVerName={#MyAppDisplayName}
+#endif
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}/support
@@ -83,21 +87,21 @@ Name: "chinesesimplified"; MessagesFile: "@CMAKE_SOURCE_DIR@\cmake\packaging\Chi
 english.ComponentApplication=Foundation Sunshine Lite main application
 english.ComponentAssets=Required assets (shaders, web UI)
 english.ComponentGUI=Control panel and tray agent (required)
-english.ComponentVDD=Zako Virtual Display Driver (HDR)
+english.ComponentVDD=Zako Virtual Display Driver (SDR / HDR)
 english.ComponentAutostart=Launch on system startup
 english.ComponentFirewall=Add firewall exclusions
 english.ComponentGamepad=Virtual Gamepad (ViGEmBus)
-english.ComponentVmouse=Virtual Mouse Driver (UMDF)
+english.ComponentVmouse=Zako Virtual Mouse Driver (UMDF)
 english.ComponentTools=Diagnostic tools (dxgi-info, audio-info)
 english.TypeRecommended=Recommended (core + firewall + autostart)
 english.TypeFull=Extended installation (virtual display + gamepad)
 english.TypeCompact=Compact installation (core only)
 english.TypeCustom=Custom installation
-english.ComponentVDDDesc=Optional HDR virtual display. Imports an upstream test-signing certificate into Trusted Root. Not needed for physical displays.
+english.ComponentVDDDesc=Creates and manages virtual displays for streaming, with SDR and HDR support. Optional when using a physical display. Imports an upstream test-signing certificate into Trusted Root.
 english.ComponentFirewallDesc=Allows Moonlight clients to discover and connect to this PC over the network.
 english.ComponentAutostartDesc=Sunshine will start automatically when Windows boots. Recommended for always-on streaming.
 english.ComponentGamepadDesc=Optional Xbox controller emulation for client gamepad input. Upstream maintenance has ended.
-english.ComponentVmouseDesc=Advanced, optional absolute mouse positioning. Imports a test-signing certificate into Trusted Root and Trusted Publishers.
+english.ComponentVmouseDesc=Optional: improves remote mouse input compatibility with some games. Basic mouse control works without it. Imports a test-signing certificate into Trusted Root and Trusted Publishers.
 english.MsgDriverTrust=The selected optional drivers will add upstream test-signing certificates to this computer's trust stores:%n%n%1%n%nThese certificates are not public certificate-authority endorsements. Continue only if you trust these driver publishers.%n%nContinue installing the selected drivers?
 english.VDDTrust=ZakoVDD: Trusted Root Certification Authorities
 english.VmouseTrust=Virtual Mouse: Trusted Root Certification Authorities and Trusted Publishers
@@ -127,21 +131,21 @@ english.StatusStoppingProcesses=Stopping running Sunshine processes...
 chinesesimplified.ComponentApplication=Sunshine 主程序
 chinesesimplified.ComponentAssets=必要资源（着色器、Web UI）
 chinesesimplified.ComponentGUI=控制面板与托盘代理（必需）
-chinesesimplified.ComponentVDD=Zako 虚拟显示驱动（HDR）
+chinesesimplified.ComponentVDD=Zako 虚拟显示驱动（支持 SDR／HDR）
 chinesesimplified.ComponentAutostart=开机自动启动
 chinesesimplified.ComponentFirewall=添加防火墙规则
 chinesesimplified.ComponentGamepad=虚拟手柄（ViGEmBus）
-chinesesimplified.ComponentVmouse=虚拟鼠标驱动（UMDF）
+chinesesimplified.ComponentVmouse=Zako 虚拟鼠标驱动（UMDF）
 chinesesimplified.ComponentTools=诊断工具（dxgi-info、audio-info）
 chinesesimplified.TypeRecommended=推荐安装（核心 + 防火墙 + 开机自启）
 chinesesimplified.TypeFull=扩展安装（虚拟显示器 + 手柄）
 chinesesimplified.TypeCompact=简洁安装（仅核心）
 chinesesimplified.TypeCustom=自定义安装
-chinesesimplified.ComponentVDDDesc=选用 HDR 虚拟显示器。会将上游测试签名证书导入受信任的根证书存储区。实体显示器无需安装。
+chinesesimplified.ComponentVDDDesc=建立并管理串流使用的虚拟显示器，支持 SDR 与 HDR。使用实体显示器时可不安装。会将上游测试签名证书导入受信任的根证书存储区。
 chinesesimplified.ComponentFirewallDesc=允许 Moonlight 客户端通过网络发现并连接本机。
 chinesesimplified.ComponentAutostartDesc=Windows 启动时自动运行 Sunshine。推荐常驻串流使用。
 chinesesimplified.ComponentGamepadDesc=选用：接收客户端的手柄输入并模拟 Xbox 手柄。上游已停止维护。
-chinesesimplified.ComponentVmouseDesc=进阶选装：提供鼠标绝对定位。会将测试签名证书导入受信任的根证书及受信任的发布者存储区。
+chinesesimplified.ComponentVmouseDesc=选用：改善远程鼠标输入与部分游戏的兼容性；不安装仍可使用基本鼠标操作。会将测试签名证书导入受信任的根证书及受信任的发布者存储区。
 chinesesimplified.MsgDriverTrust=所选的可选驱动会将上游测试签名证书添加到本机的信任存储区：%n%n%1%n%n这些证书不代表公共证书颁发机构的认可。请仅在信任这些驱动发布者时继续。%n%n是否继续安装所选驱动？
 chinesesimplified.VDDTrust=ZakoVDD：受信任的根证书颁发机构
 chinesesimplified.VmouseTrust=虚拟鼠标：受信任的根证书颁发机构及受信任的发布者
@@ -171,21 +175,21 @@ chinesesimplified.StatusStoppingProcesses=正在停止 Sunshine 进程...
 chinesetraditional.ComponentApplication=Foundation Sunshine Lite 主程式
 chinesetraditional.ComponentAssets=必要資源（著色器、Web 介面）
 chinesetraditional.ComponentGUI=控制面板與系統匣代理程式（必要）
-chinesetraditional.ComponentVDD=Zako 虛擬顯示器驅動程式（HDR）
+chinesetraditional.ComponentVDD=Zako 虛擬顯示器驅動程式（支援 SDR／HDR）
 chinesetraditional.ComponentAutostart=開機自動啟動
 chinesetraditional.ComponentFirewall=新增防火牆規則
 chinesetraditional.ComponentGamepad=虛擬遊戲控制器（ViGEmBus）
-chinesetraditional.ComponentVmouse=虛擬滑鼠驅動程式（UMDF）
+chinesetraditional.ComponentVmouse=Zako 虛擬滑鼠驅動程式（UMDF）
 chinesetraditional.ComponentTools=診斷工具（dxgi-info、audio-info）
 chinesetraditional.TypeRecommended=建議安裝（核心、防火牆與開機啟動）
 chinesetraditional.TypeFull=擴充安裝（虛擬顯示器與遊戲控制器）
 chinesetraditional.TypeCompact=精簡安裝（僅核心元件）
 chinesetraditional.TypeCustom=自訂安裝
-chinesetraditional.ComponentVDDDesc=選用 HDR 虛擬顯示器。會將上游測試簽章憑證匯入受信任的根憑證存放區。實體顯示器無須安裝。
+chinesetraditional.ComponentVDDDesc=建立並管理串流使用的虛擬螢幕，支援 SDR 與 HDR。使用實體螢幕時可不安裝。會將上游測試簽章憑證匯入受信任的根憑證存放區。
 chinesetraditional.ComponentFirewallDesc=允許 Moonlight 用戶端透過網路探索並連線至這台電腦。
 chinesetraditional.ComponentAutostartDesc=Windows 開機時自動啟動 Sunshine。適合需要隨時接受串流連線的主機。
 chinesetraditional.ComponentGamepadDesc=選用：接收用戶端的遊戲控制器輸入並模擬 Xbox 控制器。上游已停止維護。
-chinesetraditional.ComponentVmouseDesc=進階選裝：提供滑鼠絕對定位。會將測試簽章憑證匯入受信任的根憑證與受信任的發行者存放區。
+chinesetraditional.ComponentVmouseDesc=選用：改善遠端滑鼠輸入與部分遊戲的相容性；不安裝仍可使用基本滑鼠操作。會將測試簽章憑證匯入受信任的根憑證與受信任的發行者存放區。
 chinesetraditional.MsgDriverTrust=所選的選用驅動程式會將上游測試簽章憑證加入這台電腦的信任存放區：%n%n%1%n%n這些憑證不代表公開憑證授權單位的認可。請僅在信任這些驅動程式發行者時繼續。%n%n是否繼續安裝所選驅動程式？
 chinesetraditional.VDDTrust=ZakoVDD：受信任的根憑證授權單位
 chinesetraditional.VmouseTrust=虛擬滑鼠：受信任的根憑證授權單位與受信任的發行者
@@ -267,7 +271,7 @@ Source: "{#MySourceDir}\tools\nefconw.exe"; DestDir: "{app}\tools"; Flags: ignor
 
 ; Pinned manifest for the separately distributed first-party DualSense runtime.
 
-; Optional HDR adapter shipped with Sunshine. List first-party files explicitly
+; Optional SDR/HDR virtual display adapter. List first-party files explicitly
 ; so a stale local staging directory cannot add a vendor runtime to the package.
 Source: "{#MySourceDir}\tools\hdr_enhanced\nvidia_rtx_video\foundation_rtx_video_adapter.dll"; DestDir: "{app}\tools\hdr_enhanced\nvidia_rtx_video"; Flags: ignoreversion skipifsourcedoesntexist; Components: application
 Source: "{#MySourceDir}\tools\hdr_enhanced\nvidia_rtx_video\README.md"; DestDir: "{app}\tools\hdr_enhanced\nvidia_rtx_video"; Flags: ignoreversion skipifsourcedoesntexist; Components: application
@@ -611,7 +615,9 @@ begin
   BrandSubtitle.Parent := BrandPanel;
   BrandSubtitle.Left := 16;
   BrandSubtitle.Top := 38;
-  BrandSubtitle.Caption := '{#MyAppDisplayVersion}' + '  |  ' + CustomMessage('BrandTagline');
+  BrandSubtitle.Caption := CustomMessage('BrandTagline');
+  if '{#MyAppDisplayVersion}' <> '' then
+    BrandSubtitle.Caption := '{#MyAppDisplayVersion}' + '  |  ' + BrandSubtitle.Caption;
   BrandSubtitle.Font.Name := 'Segoe UI';
   BrandSubtitle.Font.Size := 9;
   BrandSubtitle.Font.Color := $666666;
