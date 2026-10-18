@@ -13,6 +13,38 @@ http.createServer(async (req, res) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405); res.end('Read-only preview'); return }
   try {
     const url = new URL(req.url, 'http://127.0.0.1:8081')
+    if (sample && url.pathname === '/connection-preview') {
+      const base = new URL('../src_assets/common/sunshine-control-panel/', import.meta.url)
+      const [shell, style, markup, script] = await Promise.all([
+        'src-tauri/error-404.html', 'src/renderer/shared/connection-screen.css',
+        'src/renderer/shared/connection-screen.html', 'src/renderer/shared/connection-screen.js',
+      ].map(path => readFile(new URL(path, base), 'utf8')))
+      const controls = `<form id="preview-controls" style="padding:10px 18px;font:14px system-ui;display:flex;gap:16px;flex-wrap:wrap;background:#fff;color:#17212f">
+        <label>配色 <select name="theme"><option value="light">淺色</option><option value="dark">深色</option></select></label>
+        <label>語系 <select name="locale"><option value="zh_TW">繁體中文</option><option value="zh">简体中文</option><option value="en">English</option></select></label>
+        <label>狀態 <select name="phase"><option value="waiting">搜尋中</option><option value="ready">已連線</option><option value="preparing">準備中</option><option value="offline">無法連線</option><option value="mismatch">版本不相容</option></select></label>
+        <a href="/config">WebUI 預覽</a><span>僅供預覽，不連接實際主機</span></form>`
+      const setup = `
+        const params = new URLSearchParams(location.search);
+        const controls = document.getElementById('preview-controls');
+        for (const key of ['theme','locale','phase']) {
+          const value = params.get(key); if (value && [...controls.elements[key].options].some(option => option.value === value)) controls.elements[key].value = value;
+        }
+        const panel = mountConnectionScreen(document.getElementById('connection-preview'), {autoStart:false,probe:async () => 'waiting',onReady:() => {},theme:controls.theme.value,locale:controls.locale.value,phase:controls.phase.value});
+        controls.addEventListener('submit', event => event.preventDefault());
+        controls.addEventListener('change', () => {
+          panel.setTheme(controls.theme.value); panel.setLocale(controls.locale.value); panel.setState(controls.phase.value);
+        });
+      `
+      const body = shell.replace('/* CONNECTION_STYLE */', style)
+        .replace('<!-- CONNECTION_MARKUP -->', markup)
+        .replace('data-connection-autostart', 'id="connection-preview"')
+        .replace('<body>', '<body>' + controls)
+        .replace('/* CONNECTION_SCRIPT */', script + setup)
+      res.writeHead(200, { 'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-store' })
+      res.end(body)
+      return
+    }
     if (url.pathname.startsWith('/api/')) {
       if (sample) {
         const data = url.pathname === '/api/config' ? sampleConfig
