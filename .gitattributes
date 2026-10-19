@@ -11,3 +11,6 @@ Dockerfile text eol=lf
 
 # Core patch context must match the LF source archive on Windows too.
 tools/hidmaestro-core-patch/*.patch text eol=lf whitespace=-blank-at-eol
+
+# Signed driver packages and their hashed members must retain their exact bytes.
+src_assets/windows/drivers/** -text
