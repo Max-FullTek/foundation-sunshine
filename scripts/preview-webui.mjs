@@ -8,6 +8,13 @@ const sample = process.argv.includes('--sample')
 const samplePairingStarted = Date.now()
 const sampleConfig = { platform:'windows', version:'介面預覽', sunshine_name:'Sunshine Lite 範例主機', locale:'zh_TW', setup_wizard_completed:true, adapters:[], display_devices:[], controller:'enabled', keyboard:'enabled', mouse:'enabled' }
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.ico': 'image/x-icon' }
+const desktopPreviewLogs = [
+        { timestamp:'2026-10-19 10:00:00', level:'info', file:'app.rs', line:1, message:'[範例] Foundation Desktop started.' },
+        { timestamp:'2026-10-19 10:00:01', level:'info', file:'proxy_server.rs', line:1, message:'[範例] Local control panel connection verified.' },
+        { timestamp:'2026-10-19 10:00:02', level:'warn', file:'tray.rs', line:1, message:'[範例] Sunshine temporarily unavailable; waiting to reconnect.' },
+        { timestamp:'2026-10-19 10:00:03', level:'info', file:'windows.rs', line:1, message:'[範例] Control panel window opened.' },
+ ]
+
 http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', 'http://127.0.0.1:8080')
   res.setHeader('Access-Control-Allow-Headers', 'X-Log-Offset')
@@ -16,16 +23,10 @@ http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://127.0.0.1:8081')
     if (sample && url.pathname === '/console-preview') {
-      const logs = [
-        { timestamp:'2026-10-19 10:00:00', level:'info', file:'app.rs', line:1, message:'[範例] Foundation Desktop started.' },
-        { timestamp:'2026-10-19 10:00:01', level:'info', file:'proxy_server.rs', line:1, message:'[範例] Local control panel connection verified.' },
-        { timestamp:'2026-10-19 10:00:02', level:'warn', file:'tray.rs', line:1, message:'[範例] Sunshine temporarily unavailable; waiting to reconnect.' },
-        { timestamp:'2026-10-19 10:00:03', level:'info', file:'windows.rs', line:1, message:'[範例] Control panel window opened.' },
-      ]
       const html = await readFile(new URL('../src_assets/common/sunshine-control-panel/dist/console/index.html', import.meta.url), 'utf8')
       res.writeHead(200, { 'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-store' })
-      res.end(html.replaceAll('/assets/', '/console-assets/').replace('<head>', `<head><script>window.__FOUNDATION_PREVIEW_SAMPLE__=true;window.__FOUNDATION_CONSOLE_PREVIEW_LOGS__=${JSON.stringify(logs)}</script>`)
-        .replace('<body>', '<body><aside style="position:fixed;bottom:0;right:8px;z-index:9999;background:#262321;color:#fff;padding:5px 12px;font:12px system-ui;border-radius:6px 6px 0 0">桌面記錄主控台預覽 · 範例資料 · 清除與匯出停用</aside>'))
+      res.end(html.replaceAll('/assets/', '/console-assets/').replace('<head>', `<head><script>window.__FOUNDATION_PREVIEW_SAMPLE__=true;window.__FOUNDATION_CONSOLE_PREVIEW_LOGS__=${JSON.stringify(desktopPreviewLogs)}</script>`)
+        .replace('<body>', '<body><aside style="position:fixed;bottom:0;right:8px;z-index:9999;background:#262321;color:#fff;padding:5px 12px;font:12px system-ui;border-radius:6px 6px 0 0">桌面記錄主控台預覽 · 範例資料 · 下載停用</aside>'))
       return
     }
     if (sample && url.pathname.startsWith('/console-assets/')) {
@@ -104,7 +105,7 @@ http.createServer(async (req, res) => {
     const file = resolve(root, `.${path}`)
     if (!file.startsWith(root + sep)) { res.writeHead(403); res.end(); return }
     let body = await readFile(file)
-    if (sample && extname(file) === '.html') body = Buffer.from(body.toString().replace('<head>', '<head><script>window.__FOUNDATION_PREVIEW_SAMPLE__ = true</script>'))
+    if (sample && extname(file) === '.html') body = Buffer.from(body.toString().replace('<head>', `<head><script>window.__FOUNDATION_PREVIEW_SAMPLE__=true;window.__FOUNDATION_CONSOLE_PREVIEW_LOGS__=${JSON.stringify(desktopPreviewLogs)}</script>`))
     res.writeHead(200, { 'Content-Type': types[extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' })
     res.end(body)
   } catch {
