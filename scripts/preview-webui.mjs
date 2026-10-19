@@ -2,6 +2,7 @@
 import http from 'node:http'
 import { readFile } from 'node:fs/promises'
 import { resolve, extname, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 const root = resolve(process.env.SUNSHINE_ASSETS_DIR || 'build', 'assets/web')
 const sample = process.argv.includes('--sample')
 const samplePairingStarted = Date.now()
@@ -14,6 +15,27 @@ http.createServer(async (req, res) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405); res.end('Read-only preview'); return }
   try {
     const url = new URL(req.url, 'http://127.0.0.1:8081')
+    if (sample && url.pathname === '/console-preview') {
+      const logs = [
+        { timestamp:'2026-10-19 10:00:00', level:'info', file:'app.rs', line:1, message:'[範例] Foundation Desktop started.' },
+        { timestamp:'2026-10-19 10:00:01', level:'info', file:'proxy_server.rs', line:1, message:'[範例] Local control panel connection verified.' },
+        { timestamp:'2026-10-19 10:00:02', level:'warn', file:'tray.rs', line:1, message:'[範例] Sunshine temporarily unavailable; waiting to reconnect.' },
+        { timestamp:'2026-10-19 10:00:03', level:'info', file:'windows.rs', line:1, message:'[範例] Control panel window opened.' },
+      ]
+      const html = await readFile(new URL('../src_assets/common/sunshine-control-panel/dist/console/index.html', import.meta.url), 'utf8')
+      res.writeHead(200, { 'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-store' })
+      res.end(html.replaceAll('/assets/', '/console-assets/').replace('<head>', `<head><script>window.__FOUNDATION_PREVIEW_SAMPLE__=true;window.__FOUNDATION_CONSOLE_PREVIEW_LOGS__=${JSON.stringify(logs)}</script>`)
+        .replace('<body>', '<body><aside style="position:fixed;bottom:0;right:8px;z-index:9999;background:#262321;color:#fff;padding:5px 12px;font:12px system-ui;border-radius:6px 6px 0 0">桌面記錄主控台預覽 · 範例資料 · 清除與匯出停用</aside>'))
+      return
+    }
+    if (sample && url.pathname.startsWith('/console-assets/')) {
+      const assets = fileURLToPath(new URL('../src_assets/common/sunshine-control-panel/dist/assets/', import.meta.url))
+      const file = resolve(assets, decodeURIComponent(url.pathname.slice('/console-assets/'.length)))
+      if (!file.startsWith(resolve(assets) + sep)) { res.writeHead(403); res.end(); return }
+      res.writeHead(200, { 'Content-Type': types[extname(file)] || 'application/octet-stream', 'Cache-Control':'no-store' })
+      res.end(await readFile(file))
+      return
+    }
     if (sample && url.pathname === '/connection-preview') {
       const base = new URL('../src_assets/common/sunshine-control-panel/', import.meta.url)
       const [shell, palette, style, markup, script, radar] = await Promise.all([
