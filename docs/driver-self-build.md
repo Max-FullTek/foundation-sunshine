@@ -15,6 +15,8 @@ Foundation Sunshine Lite 僅支援 Windows 11 x64。VDD 與虛擬滑鼠維持獨
 
 執行 `Package independent Foundation drivers` workflow，可選 VDD、滑鼠或兩者。它只驗證並包裝現有簽署產物與固定雜湊的 nefcon，不編譯 Lite／GUI，也不安裝驅動。只更新驅動產物的 master 提交會執行此 workflow，跳過完整 Lite workflow。共用安裝腳本、核心或 GUI 改動仍須正常建置。
 
+新增 workflow 必須先合併到預設分支，GitHub 才能接受手動 dispatch；功能分支階段可直接使用下列本機入口。
+
 本機入口：
 
 ```powershell
@@ -32,3 +34,5 @@ Lite 本身的安裝包仍然內附該次提交固定的驅動版本。只有要
 滑鼠安裝只處理 Foundation 的確切 root／child 識別。先匯入權限 Extension，再建立或更新 root；必須確認 child 的即時 DACL 僅允許 SYSTEM／管理員，才回報成功並清除確切的舊 Zako 滑鼠。更新失敗時保持未驗證完成的 root 停用、保留 DriverStore 套件供修復，不偽裝成功或自動重開服務。VDD 沿用既有精確裝置識別與更新交易復原流程。
 
 現有實機紀錄涵蓋 VDD 基本 HDR／退出後螢幕恢復，以及滑鼠移動、左右鍵、拖曳、雙向捲動與權限限制。此整合沒有執行新安裝、重開機或完整生命週期驗收；套件納入正式包版不代表這些項目已驗證，也不構成無後門／無遙測的證明。
+
+目前自建 VDD 簽署包不含原版選用的 Vulkan HDR 橋接 DLL、layer manifest 與 probe。這與基本 VDD HDR 是不同元件；完整 Lite 發佈前仍需確認是否一併補齊自建橋接元件，不能將基本 HDR 的既有紀錄視為 Vulkan 相容性驗證。
