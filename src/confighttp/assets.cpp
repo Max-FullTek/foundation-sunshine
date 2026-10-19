@@ -130,18 +130,6 @@ namespace confighttp::assets {
     }
 
     void
-    getAlkaidLabLogoImage(resp_https_t response, req_https_t request) {
-      if (!authenticate(response, request)) return;
-      getStaticResource(response, request, WEB_DIR "images/logo-alkaidlab.png", "image/png");
-    }
-
-    void
-    getNatPierceLogoImage(resp_https_t response, req_https_t request) {
-      if (!authenticate(response, request)) return;
-      getStaticResource(response, request, WEB_DIR "images/logo-natpierce.png", "image/png");
-    }
-
-    void
     getBoxArt(resp_https_t response, req_https_t request) {
       print_req(request);
 
@@ -265,8 +253,6 @@ namespace confighttp::assets {
     server.resource["^/troubleshooting/?$"]["GET"] = getTroubleshootingPage;
     server.resource["^/images/sunshine.ico$"]["GET"] = getFaviconImage;
     server.resource["^/images/logo-sunshine-256.png$"]["GET"] = getSunshineLogoImage;
-    server.resource["^/images/logo-alkaidlab.png$"]["GET"] = getAlkaidLabLogoImage;
-    server.resource["^/images/logo-natpierce.png$"]["GET"] = getNatPierceLogoImage;
     server.resource["^/boxart/.+$"]["GET"] = getBoxArt;
     server.resource["^/assets\\/.+$"]["GET"] = getNodeModules;
   }

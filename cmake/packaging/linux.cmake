@@ -94,14 +94,14 @@ endif()
 
 # tray icon
 if(${SUNSHINE_TRAY} STREQUAL 1)
-    install(FILES "${CMAKE_SOURCE_DIR}/assets/brand/sunshine.svg"
+    install(FILES "${SUNSHINE_SOURCE_ASSETS_DIR}/common/sunshine-control-panel/webui/public/images/sunshine.svg"
             DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/status"
             RENAME "sunshine-tray.svg")
-    install(FILES "${SUNSHINE_SOURCE_ASSETS_DIR}/common/assets/web/public/images/sunshine-playing.svg"
+    install(FILES "${SUNSHINE_SOURCE_ASSETS_DIR}/common/sunshine-control-panel/webui/public/images/sunshine-playing.svg"
             DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/status")
-    install(FILES "${SUNSHINE_SOURCE_ASSETS_DIR}/common/assets/web/public/images/sunshine-pausing.svg"
+    install(FILES "${SUNSHINE_SOURCE_ASSETS_DIR}/common/sunshine-control-panel/webui/public/images/sunshine-pausing.svg"
             DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/status")
-    install(FILES "${SUNSHINE_SOURCE_ASSETS_DIR}/common/assets/web/public/images/sunshine-locked.svg"
+    install(FILES "${SUNSHINE_SOURCE_ASSETS_DIR}/common/sunshine-control-panel/webui/public/images/sunshine-locked.svg"
             DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/status")
 
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "\

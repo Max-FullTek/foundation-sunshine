@@ -23,7 +23,7 @@
     #define TRAY_ICON_PAUSING "sunshine-pausing"
     #define TRAY_ICON_LOCKED "sunshine-locked"
   #elif defined(__APPLE__) || defined(__MACH__)
-    #define TRAY_ICON WEB_DIR "images/logo-sunshine-16.png"
+    #define TRAY_ICON WEB_DIR "images/sunshine-16.png"
     #define TRAY_ICON_PLAYING WEB_DIR "images/sunshine-playing-16.png"
     #define TRAY_ICON_PAUSING WEB_DIR "images/sunshine-pausing-16.png"
     #define TRAY_ICON_LOCKED WEB_DIR "images/sunshine-locked-16.png"

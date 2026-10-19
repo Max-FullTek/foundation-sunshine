@@ -243,14 +243,6 @@
     "method": "GET"
   },
   {
-    "pattern": "^/images/logo-alkaidlab.png$",
-    "method": "GET"
-  },
-  {
-    "pattern": "^/images/logo-natpierce.png$",
-    "method": "GET"
-  },
-  {
     "pattern": "^/boxart/.+$",
     "method": "GET"
   },
