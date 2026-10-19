@@ -445,7 +445,7 @@ namespace config {
     false,  // vdd_headless_create_enabled
     false,  // vdd_reuse (default: recreate VDD for each client)
     true,  // vdd_borrowed_texture
-    true,  // vdd_vulkan_hdr_bridge (automatic for HDR VDD sessions)
+    false,  // vdd_vulkan_hdr_bridge (opt-in compatibility layer)
     {},  // nv_legacy
 
     {

@@ -1,0 +1,19 @@
+{
+  "repository": "https://github.com/Max-FullTek/zako-vdd",
+  "commit": "9f6b00b20cf7c8584ee06e09a362514773edf70f",
+  "upstream_sha256": {
+    "tools/vulkan_hdr_bridge/vulkan_hdr_bridge.cpp": "7e0e05fd2bfce48a6dec52f33422b53db8a7082684a6cad79d446ea001c69438",
+    "tools/vulkan_hdr_bridge/VkLayer_zako_virtual_hdr.json": "4d82fe06860aba80016b8acf40d8536d46144edf0fecd5b3e598268cfd840954",
+    "tools/vulkan_hdr_probe/vulkan_hdr_probe.cpp": "423f0658400509b58d772252f502bcc3f7fdad3b2d4e5c7e255c4bdc91adf02e",
+    "tools/vulkan_hdr_probe/vulkan_minimal.h": "81f5063590e9a89081317d48b012fc89c4cccee7eed882cc383f0ad6009355f3",
+    "Common/Include/vulkan_hdr_capability_cache.h": "2a3ec9d0a764e097ebaf8caff0d67307674167e792197b4c488b36b9ec6238a3",
+    "Common/Include/vulkan_hdr_policy.h": "bcf0d94512f77424fb1f468258dce613ea076ed62f8f7ae9c2a9eae680829656",
+    "LICENSE": "c2285c867ddc9b88f43b4f8fa2c77a9eec66207166c1217b37353a2ccd62ac03"
+  },
+  "local_changes": [
+    "Disable development force/cache-path environment overrides",
+    "Load system Vulkan loader only",
+    "Use portable filesystem paths and string copy for MinGW/MSVC builds"
+  ],
+  "runtime_game_hdr_verified": false
+}

@@ -38,6 +38,16 @@ try {
     if ($configDirectory) { $arguments += @('-ConfigDirectory',$configDirectory) }
     & (Join-Path $env:SystemRoot 'System32/WindowsPowerShell/v1.0/powershell.exe') @arguments
     $result = $LASTEXITCODE
+    if ($Action -eq 'Install' -and $result -in @(0,3010) -and $Component -eq 'vdd' -and $key -and $key.InstallDir) {
+        # Update the optional user-mode tools alongside an independent VDD
+        # update. Copying files does not register or enable the Vulkan layer.
+        $bridgeSource = Join-Path $PSScriptRoot 'tools/vulkan_hdr'
+        $bridgeTarget = Join-Path $key.InstallDir 'tools/vulkan_hdr'
+        [void][IO.Directory]::CreateDirectory($bridgeTarget)
+        foreach ($file in @('zako_vulkan_hdr_bridge.dll','vulkan_hdr_probe.exe','VkLayer_zako_virtual_hdr.json','LICENSE','source.json')) {
+            Copy-Item -LiteralPath (Join-Path $bridgeSource $file) -Destination $bridgeTarget -Force
+        }
+    }
     if ($result -eq 0 -and $restart) { Start-Service SunshineService }
     if ($result -eq 3010) { Write-Host 'Windows reports that a restart is required. No restart was performed.' }
     exit $result

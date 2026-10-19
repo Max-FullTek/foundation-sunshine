@@ -327,6 +327,12 @@ Source: "{#MySourceDir}\scripts\add-firewall-rule.bat"; DestDir: "{app}\scripts"
 Source: "{#MySourceDir}\scripts\delete-firewall-rule.bat"; DestDir: "{app}\scripts"; Flags: ignoreversion
 
 ; Virtual Display Driver scripts & files
+; Source-built optional Vulkan HDR tools. Copying does not enable the layer.
+Source: "{#MySourceDir}\tools\vulkan_hdr\zako_vulkan_hdr_bridge.dll"; DestDir: "{app}\tools\vulkan_hdr"; Flags: ignoreversion
+Source: "{#MySourceDir}\tools\vulkan_hdr\vulkan_hdr_probe.exe"; DestDir: "{app}\tools\vulkan_hdr"; Flags: ignoreversion
+Source: "{#MySourceDir}\tools\vulkan_hdr\VkLayer_zako_virtual_hdr.json"; DestDir: "{app}\tools\vulkan_hdr"; Flags: ignoreversion
+Source: "{#MySourceDir}\tools\vulkan_hdr\LICENSE"; DestDir: "{app}\tools\vulkan_hdr"; Flags: ignoreversion
+Source: "{#MySourceDir}\tools\vulkan_hdr\source.json"; DestDir: "{app}\tools\vulkan_hdr"; Flags: ignoreversion
 Source: "{#MySourceDir}\scripts\install-vdd.bat"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "{#MySourceDir}\scripts\vdd-device-helper.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "{#MySourceDir}\scripts\uninstall-vdd.bat"; DestDir: "{app}\scripts"; Flags: ignoreversion

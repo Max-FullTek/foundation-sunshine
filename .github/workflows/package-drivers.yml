@@ -9,6 +9,7 @@ on:
       - 'src_assets/windows/misc/verify-driver-certificate.ps1'
       - 'src_assets/windows/misc/manage-driver.ps1'
       - 'scripts/package-drivers.ps1'
+      - 'third-party/zako-vulkan-hdr/**'
       - 'cmake/packaging/FetchDriverDeps.cmake'
       - '.github/workflows/package-drivers.yml'
   workflow_dispatch:
