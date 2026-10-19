@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "component": "vdd",
+  "version": "100.0.18.0",
+  "minimum_windows_build": 22000,
+  "architecture": "amd64",
+  "source_repository": "https://github.com/Max-FullTek/zako-vdd",
+  "source_commit": "9f6b00b20cf7c8584ee06e09a362514773edf70f",
+  "build_run": "https://github.com/Max-FullTek/zako-vdd/actions/runs/39161569633",
+  "signing": "locally-signed; not Microsoft WHQL/attestation signed",
+  "signer_thumbprint": "78983DA4728FBB6B57779A60F6B1A2F071C84F07",
+  "files": {
+    "LICENSE": "18410203392d42d8dac0ac33a727d04696bb6ffbff8493975466fa8aedc2cb27",
+    "zakovdd.cat": "4308a39b425c1136065b427608ea810330a151fd162fd3b74cef6d6d27e37eda",
+    "ZakoVDD.cer": "cc4b72ff897d8ef7a4f53c24e928a7316fd43a380353b3d255157600bd5b6564",
+    "ZakoVDD.dll": "79fd19c591663fd0e08e158b6f34ec5a6a22ca42229e5bfd0f59abb924980321",
+    "ZakoVDD.inf": "55c358c5bf71a565d38af3a6bb9e2e478c3ae6cbbfcc1648870f988accb918ef"
+  }
+}

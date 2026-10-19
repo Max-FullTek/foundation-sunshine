@@ -35,7 +35,7 @@ cd foundation-sunshine
 - [DualSense 组件生命周期](https://github.com/AlkaidLab/foundation-sunshine/blob/master/docs/windows_dualsense_component_lifecycle.md)
 - [NVIDIA HDR 构建](https://github.com/AlkaidLab/foundation-sunshine/blob/master/docs/rtx_hdr_build.md)
 - [主程序与 GUI 配对构建](https://github.com/AlkaidLab/foundation-sunshine/blob/master/docs/paired-gui-build.md)
-- [虚拟滑鼠与 VDD 自建计划](../driver-self-build.md)
+- [自建驱动包版与独立更新](../driver-self-build.md)
 
 ## WebUI 开发
 

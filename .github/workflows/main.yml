@@ -5,6 +5,10 @@ name: Build and Release
 # build-and-release cycle.
 on:
   pull_request:
+    paths-ignore:
+      - 'src_assets/windows/drivers/**'
+      - '.github/workflows/package-drivers.yml'
+      - 'scripts/package-drivers.ps1'
     branches:
       - master
     types:
@@ -14,6 +18,10 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - 'src_assets/windows/drivers/**'
+      - '.github/workflows/package-drivers.yml'
+      - 'scripts/package-drivers.ps1'
   workflow_dispatch:
     inputs:
       core_run_id:

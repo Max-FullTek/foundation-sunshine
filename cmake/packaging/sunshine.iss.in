@@ -60,8 +60,8 @@ VersionInfoProductName={#MyAppDisplayName}
 LicenseFile={#MyLicenseFile}
 ; Use our validated InstallDir registry value instead of Inno Setup's implicit previous app dir.
 UsePreviousAppDir=no
-; 最小 Windows 版本 (Windows 10)
-MinVersion=10.0
+; Foundation Sunshine Lite supports Windows 11 only.
+MinVersion=10.0.22000
 ; 64 位安装
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -91,18 +91,18 @@ english.ComponentVDD=Zako Virtual Display Driver (SDR / HDR)
 english.ComponentAutostart=Launch on system startup
 english.ComponentFirewall=Add firewall exclusions
 english.ComponentGamepad=Virtual Gamepad (ViGEmBus)
-english.ComponentVmouse=Zako Virtual Mouse Driver (UMDF)
+english.ComponentVmouse=Foundation Virtual Mouse Driver (UMDF)
 english.ComponentTools=Diagnostic tools (dxgi-info, audio-info)
 english.TypeRecommended=Recommended (core + firewall + autostart)
 english.TypeFull=Extended installation (virtual display + gamepad)
 english.TypeCompact=Compact installation (core only)
 english.TypeCustom=Custom installation
-english.ComponentVDDDesc=Creates and manages virtual displays for streaming, with SDR and HDR support. Optional when using a physical display. Imports an upstream test-signing certificate into Trusted Root.
+english.ComponentVDDDesc=Creates and manages virtual displays for streaming, with SDR and HDR support. Optional when using a physical display. Imports an Foundation locally issued signing certificate into Trusted Root.
 english.ComponentFirewallDesc=Allows Moonlight clients to discover and connect to this PC over the network.
 english.ComponentAutostartDesc=Sunshine will start automatically when Windows boots. Recommended for always-on streaming.
 english.ComponentGamepadDesc=Optional Xbox controller emulation for client gamepad input. Upstream maintenance has ended.
 english.ComponentVmouseDesc=Optional: improves remote mouse input compatibility with some games. Basic mouse control works without it. Imports a test-signing certificate into Trusted Root and Trusted Publishers.
-english.MsgDriverTrust=The selected optional drivers will add upstream test-signing certificates to this computer's trust stores:%n%n%1%n%nThese certificates are not public certificate-authority endorsements. Continue only if you trust these driver publishers.%n%nContinue installing the selected drivers?
+english.MsgDriverTrust=The selected optional drivers will add Foundation locally issued signing certificate to this computer's trust stores:%n%n%1%n%nThese certificates are not public certificate-authority endorsements. Continue only if you trust these driver publishers.%n%nContinue installing the selected drivers?
 english.VDDTrust=ZakoVDD: Trusted Root Certification Authorities
 english.VmouseTrust=Virtual Mouse: Trusted Root Certification Authorities and Trusted Publishers
 english.ComponentToolsDesc=dxgi-info, audio-info for troubleshooting display and audio issues.
@@ -121,6 +121,7 @@ english.MsgOldNSISFailed=The previous installation could not be fully removed.%n
 english.MsgOldNSISStaleRegistry=The previous installation files appear to be gone, but registry entries remain.%nClean up the leftover registry and continue installing?
 english.MsgOldNSISCleanupFailed=Failed to clean up the previous installation registry entries.%nPlease remove HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Sunshine manually and try again.
 english.MsgServiceInstallFailed=Sunshine service could not be installed or verified.%n%nThe files were installed and are kept. Reboot and run "{app}\scripts\install-service.bat" as administrator, or use the repair action in the control panel. The installer log in your TEMP folder has the details.
+english.MsgVmouseInstallFailed=Foundation Virtual Mouse could not be installed or its access policy could not be verified. Sunshine has not been started. Review the installer log and repair the driver before starting Sunshine.
 english.MsgVDDInstallFailed=The virtual display driver could not be installed or verified.%n%nSunshine was installed but has not been started. Review the installer log in your TEMP folder, then use the repair action in the control panel.
 english.MsgUninstallGamepad=Do you want to remove Virtual Gamepad?
 english.MsgUninstallData=Do you want to remove all data in %1?%n(This includes configuration, cover images, and settings)
@@ -135,18 +136,18 @@ chinesesimplified.ComponentVDD=Zako 虚拟显示驱动（支持 SDR／HDR）
 chinesesimplified.ComponentAutostart=开机自动启动
 chinesesimplified.ComponentFirewall=添加防火墙规则
 chinesesimplified.ComponentGamepad=虚拟手柄（ViGEmBus）
-chinesesimplified.ComponentVmouse=Zako 虚拟鼠标驱动（UMDF）
+chinesesimplified.ComponentVmouse=Foundation 虚拟鼠标驱动（UMDF）
 chinesesimplified.ComponentTools=诊断工具（dxgi-info、audio-info）
 chinesesimplified.TypeRecommended=推荐安装（核心 + 防火墙 + 开机自启）
 chinesesimplified.TypeFull=扩展安装（虚拟显示器 + 手柄）
 chinesesimplified.TypeCompact=简洁安装（仅核心）
 chinesesimplified.TypeCustom=自定义安装
-chinesesimplified.ComponentVDDDesc=建立并管理串流使用的虚拟显示器，支持 SDR 与 HDR。使用实体显示器时可不安装。会将上游测试签名证书导入受信任的根证书存储区。
+chinesesimplified.ComponentVDDDesc=建立并管理串流使用的虚拟显示器，支持 SDR 与 HDR。使用实体显示器时可不安装。会将Foundation 自行签署的证书导入受信任的根证书存储区。
 chinesesimplified.ComponentFirewallDesc=允许 Moonlight 客户端通过网络发现并连接本机。
 chinesesimplified.ComponentAutostartDesc=Windows 启动时自动运行 Sunshine。推荐常驻串流使用。
 chinesesimplified.ComponentGamepadDesc=选用：接收客户端的手柄输入并模拟 Xbox 手柄。上游已停止维护。
 chinesesimplified.ComponentVmouseDesc=选用：改善远程鼠标输入与部分游戏的兼容性；不安装仍可使用基本鼠标操作。会将测试签名证书导入受信任的根证书及受信任的发布者存储区。
-chinesesimplified.MsgDriverTrust=所选的可选驱动会将上游测试签名证书添加到本机的信任存储区：%n%n%1%n%n这些证书不代表公共证书颁发机构的认可。请仅在信任这些驱动发布者时继续。%n%n是否继续安装所选驱动？
+chinesesimplified.MsgDriverTrust=所选的可选驱动会将Foundation 自行签署的证书添加到本机的信任存储区：%n%n%1%n%n这些证书不代表公共证书颁发机构的认可。请仅在信任这些驱动发布者时继续。%n%n是否继续安装所选驱动？
 chinesesimplified.VDDTrust=ZakoVDD：受信任的根证书颁发机构
 chinesesimplified.VmouseTrust=虚拟鼠标：受信任的根证书颁发机构及受信任的发布者
 chinesesimplified.ComponentToolsDesc=dxgi-info、audio-info 等，用于排查显示和音频问题。
@@ -165,6 +166,7 @@ chinesesimplified.MsgOldNSISFailed=无法完全移除旧版安装。%n请手动�
 chinesesimplified.MsgOldNSISStaleRegistry=旧版本的文件已经不存在，但注册表中仍残留旧版的卸载信息。%n是否清理残留的注册表项并继续安装？
 chinesesimplified.MsgOldNSISCleanupFailed=清理旧版注册表项失败。%n请手动删除 HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Sunshine 后重试。
 chinesesimplified.MsgServiceInstallFailed=无法安装或验证 Sunshine 服务。%n%n程序文件已经装好并会保留。请重启后以管理员身份运行 "{app}\scripts\install-service.bat"，或在控制面板里使用修复功能。详细信息见 TEMP 目录下的安装日志。
+chinesesimplified.MsgVmouseInstallFailed=无法安装 Foundation 虚拟鼠标或验证其访问权限。Sunshine 尚未启动，请检查安装日志并修复驱动。
 chinesesimplified.MsgVDDInstallFailed=无法安装或验证虚拟显示驱动。%n%nSunshine 已安装但尚未启动。请检查 TEMP 目录中的安装日志，然后在控制面板中使用修复功能。
 chinesesimplified.MsgUninstallGamepad=是否移除虚拟手柄（ViGEmBus）？
 chinesesimplified.MsgUninstallData=是否删除 %1 中的所有数据？%n（包括配置文件、封面图片和设置）
@@ -179,18 +181,18 @@ chinesetraditional.ComponentVDD=Zako 虛擬顯示器驅動程式（支援 SDR／
 chinesetraditional.ComponentAutostart=開機自動啟動
 chinesetraditional.ComponentFirewall=新增防火牆規則
 chinesetraditional.ComponentGamepad=虛擬遊戲控制器（ViGEmBus）
-chinesetraditional.ComponentVmouse=Zako 虛擬滑鼠驅動程式（UMDF）
+chinesetraditional.ComponentVmouse=Foundation 虛擬滑鼠驅動程式（UMDF）
 chinesetraditional.ComponentTools=診斷工具（dxgi-info、audio-info）
 chinesetraditional.TypeRecommended=建議安裝（核心、防火牆與開機啟動）
 chinesetraditional.TypeFull=擴充安裝（虛擬顯示器與遊戲控制器）
 chinesetraditional.TypeCompact=精簡安裝（僅核心元件）
 chinesetraditional.TypeCustom=自訂安裝
-chinesetraditional.ComponentVDDDesc=建立並管理串流使用的虛擬螢幕，支援 SDR 與 HDR。使用實體螢幕時可不安裝。會將上游測試簽章憑證匯入受信任的根憑證存放區。
+chinesetraditional.ComponentVDDDesc=建立並管理串流使用的虛擬螢幕，支援 SDR 與 HDR。使用實體螢幕時可不安裝。會將Foundation 自行簽署的憑證匯入受信任的根憑證存放區。
 chinesetraditional.ComponentFirewallDesc=允許 Moonlight 用戶端透過網路探索並連線至這台電腦。
 chinesetraditional.ComponentAutostartDesc=Windows 開機時自動啟動 Sunshine。適合需要隨時接受串流連線的主機。
 chinesetraditional.ComponentGamepadDesc=選用：接收用戶端的遊戲控制器輸入並模擬 Xbox 控制器。上游已停止維護。
 chinesetraditional.ComponentVmouseDesc=選用：改善遠端滑鼠輸入與部分遊戲的相容性；不安裝仍可使用基本滑鼠操作。會將測試簽章憑證匯入受信任的根憑證與受信任的發行者存放區。
-chinesetraditional.MsgDriverTrust=所選的選用驅動程式會將上游測試簽章憑證加入這台電腦的信任存放區：%n%n%1%n%n這些憑證不代表公開憑證授權單位的認可。請僅在信任這些驅動程式發行者時繼續。%n%n是否繼續安裝所選驅動程式？
+chinesetraditional.MsgDriverTrust=所選的選用驅動程式會將Foundation 自行簽署的憑證加入這台電腦的信任存放區：%n%n%1%n%n這些憑證不代表公開憑證授權單位的認可。請僅在信任這些驅動程式發行者時繼續。%n%n是否繼續安裝所選驅動程式？
 chinesetraditional.VDDTrust=ZakoVDD：受信任的根憑證授權單位
 chinesetraditional.VmouseTrust=虛擬滑鼠：受信任的根憑證授權單位與受信任的發行者
 chinesetraditional.ComponentToolsDesc=使用 dxgi-info、audio-info 排查顯示與音訊問題。
@@ -209,6 +211,7 @@ chinesetraditional.MsgOldNSISFailed=無法完整移除舊版安裝。%n請手動
 chinesetraditional.MsgOldNSISStaleRegistry=舊版安裝檔案已不存在，但仍有登錄項目。%n是否清除殘留的登錄項目並繼續安裝？
 chinesetraditional.MsgOldNSISCleanupFailed=無法清除舊版登錄項目。%n請手動移除 HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Sunshine 後重試。
 chinesetraditional.MsgServiceInstallFailed=無法安裝或驗證 Sunshine 服務。%n%n程式檔案已安裝並會保留。請重新開機後，以系統管理員身分執行 "{app}\scripts\install-service.bat"，或在控制面板中使用修復功能。詳細資訊請見 TEMP 資料夾中的安裝記錄。
+chinesetraditional.MsgVmouseInstallFailed=無法安裝 Foundation 虛擬滑鼠或驗證其存取權限。Sunshine 尚未啟動，請檢查安裝記錄並修復驅動程式。
 chinesetraditional.MsgVDDInstallFailed=無法安裝或驗證虛擬顯示器驅動程式。%n%nSunshine 已安裝，但尚未啟動。請檢查 TEMP 資料夾中的安裝記錄，再從控制面板使用修復功能。
 chinesetraditional.MsgUninstallGamepad=是否移除虛擬遊戲控制器（ViGEmBus）？
 chinesetraditional.MsgUninstallData=是否刪除 %1 中的所有資料？%n（包括設定檔、封面圖片與設定）
@@ -337,6 +340,8 @@ Source: "{#MySourceDir}\scripts\gamepad\*"; DestDir: "{app}\scripts\gamepad"; Fl
 ; Virtual Mouse Driver scripts & files
 Source: "{#MySourceDir}\scripts\vmouse\install-vmouse.bat"; DestDir: "{app}\scripts\vmouse"; Flags: ignoreversion
 Source: "{#MySourceDir}\scripts\vmouse\uninstall-vmouse.bat"; DestDir: "{app}\scripts\vmouse"; Flags: ignoreversion
+Source: "{#MySourceDir}\scripts\vmouse\vmouse-device-helper.ps1"; DestDir: "{app}\scripts\vmouse"; Flags: ignoreversion
+Source: "{#MySourceDir}\scripts\vmouse\device-access.cs"; DestDir: "{app}\scripts\vmouse"; Flags: ignoreversion
 Source: "{#MySourceDir}\scripts\verify-driver-certificate.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 Source: "{#MySourceDir}\scripts\vmouse\driver\*"; DestDir: "{app}\scripts\vmouse\driver"; Flags: ignoreversion recursesubdirs skipifsourcedoesntexist
 
@@ -376,7 +381,6 @@ Filename: "{app}\scripts\update-path.bat"; Parameters: "add"; StatusMsg: "{cm:St
 Filename: "{app}\scripts\migrate-config.bat"; StatusMsg: "{cm:StatusMigrateConfig}"; Flags: runhidden waituntilterminated
 Filename: "{app}\scripts\add-firewall-rule.bat"; StatusMsg: "{cm:StatusFirewall}"; Flags: runhidden waituntilterminated; Components: firewall
 Filename: "{app}\scripts\install-gamepad.bat"; StatusMsg: "{cm:StatusInstallGamepad}"; Flags: runhidden waituntilterminated; Components: gamepad
-Filename: "{app}\scripts\vmouse\install-vmouse.bat"; StatusMsg: "{cm:StatusInstallVmouse}"; Flags: runhidden waituntilterminated; Components: vmouse
 Filename: "{app}\scripts\install-service.bat"; Parameters: "{code:GetServiceInstallParameters}"; StatusMsg: "{cm:StatusInstallService}"; Flags: runhidden waituntilterminated; AfterInstall: VerifyServiceInstalled
 Filename: "{app}\scripts\autostart-service.bat"; StatusMsg: "{cm:StatusAutostart}"; Flags: runhidden waituntilterminated; Components: autostart; Check: ShouldConfigureServiceAutostart
 
@@ -451,8 +455,8 @@ var
   // callers still see a failure — the GUI updater runs us with /VERYSILENT
   // and treats exit code 0 as "update installed successfully".
   ServiceVerifyFailed: Boolean;
-  // 0 = ready/not selected, 101 = failed, 3010 = reboot required.
-  VDDResultCode: Integer;
+  // 0 = ready/not selected, 101 = VDD failed, 102 = mouse failed, 3010 = reboot required.
+  DriverResultCode: Integer;
 
 function VDDComponentSelected(): Boolean;
 begin
@@ -461,7 +465,7 @@ end;
 
 function GetServiceInstallParameters(Param: String): String;
 begin
-  if VDDResultCode = 0 then
+  if DriverResultCode = 0 then
     Result := ''
   else
     Result := '--no-start';
@@ -469,7 +473,7 @@ end;
 
 function ShouldConfigureServiceAutostart(): Boolean;
 begin
-  Result := VDDResultCode <> 101;
+  Result := (DriverResultCode = 0) or (DriverResultCode = 3010);
 end;
 
 procedure InstallAndVerifyVDD();
@@ -486,7 +490,7 @@ begin
   if not Exec(ExpandConstant('{app}\scripts\install-vdd.bat'), Params, '',
               SW_HIDE, ewWaitUntilTerminated, ResultCode) then
   begin
-    VDDResultCode := 101;
+    DriverResultCode := 101;
     Log('Could not launch the VDD installer helper.');
   end
   else if ResultCode = 0 then
@@ -495,21 +499,42 @@ begin
   end
   else if ResultCode = 3010 then
   begin
-    VDDResultCode := 3010;
+    DriverResultCode := 3010;
     Log('VDD installation requires a Windows restart; Sunshine will not start in this boot.');
   end
   else
   begin
-    VDDResultCode := 101;
+    DriverResultCode := 101;
     Log('VDD installation or verification failed with exit code ' + IntToStr(ResultCode) + '.');
   end;
 
-  if (VDDResultCode = 101) and (not WizardSilent) then
+  if (DriverResultCode = 101) and (not WizardSilent) then
   begin
     Detail := CustomMessage('MsgVDDInstallFailed') + #13#10 + #13#10 +
               CustomMessage('ExitCodeLabel') + ': ' + IntToStr(ResultCode);
     MsgBox(Detail, mbError, MB_OK);
   end;
+end;
+
+procedure InstallAndVerifyVmouse();
+var
+  ResultCode: Integer;
+begin
+  if not WizardIsComponentSelected('vmouse') then Exit;
+  WizardForm.StatusLabel.Caption := CustomMessage('StatusInstallVmouse');
+  ResultCode := -1;
+  if not Exec(ExpandConstant('{app}\scripts\vmouse\install-vmouse.bat'), '', '',
+              SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+    DriverResultCode := 102
+  else if ResultCode = 3010 then
+  begin
+    if DriverResultCode = 0 then DriverResultCode := 3010;
+  end
+  else if ResultCode <> 0 then
+    DriverResultCode := 102;
+  Log('Foundation mouse installer exit: ' + IntToStr(ResultCode));
+  if (DriverResultCode = 102) and (not WizardSilent) then
+    MsgBox(CustomMessage('MsgVmouseInstallFailed'), mbError, MB_OK);
 end;
 
 procedure InitializeWizard();
@@ -910,8 +935,8 @@ end;
 // result consumed by unattended updaters.
 function GetCustomSetupExitCode(): Integer;
 begin
-  if VDDResultCode <> 0 then
-    Result := VDDResultCode
+  if DriverResultCode <> 0 then
+    Result := DriverResultCode
   else if ServiceVerifyFailed then
     Result := 100
   else
@@ -1035,6 +1060,7 @@ begin
     // Sunshine service is allowed to start. A bound-but-not-ready device is
     // kept for Windows to finish during the requested reboot.
     InstallAndVerifyVDD();
+    InstallAndVerifyVmouse();
     // Delete portable scripts in installed version
     DeleteFile(ExpandConstant('{app}\install_portable.bat'));
     DeleteFile(ExpandConstant('{app}\uninstall_portable.bat'));
@@ -1043,7 +1069,7 @@ end;
 
 function NeedRestart(): Boolean;
 begin
-  Result := VDDResultCode = 3010;
+  Result := DriverResultCode = 3010;
 end;
 
 // Custom uninstall: ask about gamepad and data removal

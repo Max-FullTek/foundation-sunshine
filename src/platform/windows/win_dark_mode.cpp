@@ -22,9 +22,7 @@ namespace win_dark_mode {
   };
 
   // Function pointer types for undocumented uxtheme.dll APIs
-  // Windows 10 1903+ uses SetPreferredAppMode (ordinal 135)
-  // Windows 10 1809-1903 uses AllowDarkModeForApp (ordinal 135) - same ordinal, different signature
-  // We use SetPreferredAppMode as it works on all modern Windows versions
+  // Windows 11 uses SetPreferredAppMode (ordinal 135).
   using SetPreferredAppModeFn = PreferredAppMode(WINAPI *)(PreferredAppMode);
 
   // Global function pointer (initialized once)
@@ -53,8 +51,6 @@ namespace win_dark_mode {
     }
 
     // Get SetPreferredAppMode (ordinal 135)
-    // This works on Windows 10 1809+ (build 17763+)
-    // On older versions, the function will exist but may not have the expected effect
     g_SetPreferredAppMode =
       reinterpret_cast<SetPreferredAppModeFn>(
         GetProcAddress(g_hUxTheme, MAKEINTRESOURCEA(135)));
@@ -70,8 +66,7 @@ namespace win_dark_mode {
       // Use AllowDark to follow the system's dark/light mode preference
       g_SetPreferredAppMode(PreferredAppMode::AllowDark);
     }
-    // If API is not available, dark mode is not supported on this Windows version
-    // (Windows 10 < 1809 or earlier). We silently do nothing in this case.
+    // Keep the default theme if the undocumented API is unavailable.
   }
 
 }  // namespace win_dark_mode

@@ -16,7 +16,7 @@ body:
         - [ ] 我已搜索现有 issues，避免重复
         - [ ] 此功能在最新版本中尚不可用
         - [ ] 此功能针对服务器端（Sunshine），而非客户端（Moonlight）
-        - [ ] 我使用的是 Windows 10/Windows 11（虚拟显示器功能需要 Windows 10 22H2 及以上版本）
+        - [ ] 我使用的是 Windows 11（虚拟显示器功能需要 Windows 11）
         ---
 
   - type: dropdown
@@ -151,9 +151,8 @@ body:
     id: host-os
     attributes:
       label: "💻 主机操作系统"
-      description: "您的主机操作系统（仅支持 Windows 10/Windows 11）"
+      description: "您的主机操作系统（仅支持 Windows 11）"
       options:
-        - "Windows 10"
         - "Windows 11"
     validations:
       required: false
@@ -162,8 +161,8 @@ body:
     id: os-version
     attributes:
       label: "📌 Windows 具体版本"
-      description: "请从系统中获取 Windows 的具体版本信息（如：Windows 10 22H2、Windows 11 23H2、Windows 10 LTSC 2021 等）"
-      placeholder: "例如: Windows 10 22H2 / Windows 11 23H2 / Windows 10 LTSC 2021"
+      description: "请从系统中获取 Windows 的具体版本信息（如：Windows 11 24H2、Windows 11 25H2 等）"
+      placeholder: "例如: Windows 11 24H2 / Windows 11 25H2"
     validations:
       required: false
 

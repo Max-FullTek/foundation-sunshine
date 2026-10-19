@@ -1,8 +1,8 @@
 /**
  * @file src/platform/windows/virtual_mouse.cpp
- * @brief Zako Virtual Mouse client implementation.
+ * @brief Foundation Virtual Mouse client implementation.
  *
- * Finds and opens the Zako Virtual Mouse HID device by matching
+ * Finds and opens the Foundation Virtual Mouse HID device by matching
  * VID/PID, then sends mouse data via HID output reports.
  */
 #define WIN32_LEAN_AND_MEAN
@@ -20,6 +20,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include <string_view>
 
 #include "virtual_mouse.h"
 #include "src/logging.h"
@@ -60,8 +61,9 @@ namespace {
     if (!wstr) return "";
     int len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, nullptr, 0, nullptr, nullptr);
     if (len <= 0) return "";
-    std::string result(len - 1, '\0');
+    std::string result(len, '\0');
     WideCharToMultiByte(CP_UTF8, 0, wstr, -1, result.data(), len, nullptr, nullptr);
+    result.resize(len - 1);
     return result;
   }
 
@@ -78,7 +80,13 @@ namespace {
   }
 
   bool
-  is_vmouse_device(const HIDD_ATTRIBUTES &attrs, const HIDP_CAPS &caps) {
+  is_vmouse_device(HANDLE device, const HIDD_ATTRIBUTES &attrs, const HIDP_CAPS &caps) {
+    // The old driver used the same VID/PID. Never select it by enumeration order.
+    wchar_t product[256] {};
+    if (!HidD_GetProductString(device, product, sizeof(product)) ||
+        std::wstring_view(product) != L"Foundation Virtual Mouse Prototype") {
+      return false;
+    }
     return attrs.VendorID == VMOUSE_VID &&
            attrs.ProductID == VMOUSE_PID &&
            caps.FeatureReportByteLength >= VMOUSE_OUTPUT_REPORT_SIZE;
@@ -385,7 +393,7 @@ namespace platf {
           attrs.Size = sizeof(HIDD_ATTRIBUTES);
           if (HidD_GetAttributes(h, &attrs)) {
             HIDP_CAPS caps;
-            if (query_caps(h, caps) && is_vmouse_device(attrs, caps)) {
+            if (query_caps(h, caps) && is_vmouse_device(h, attrs, caps)) {
               hDevice = h;
               found = true;
 
@@ -633,7 +641,7 @@ namespace platf {
         attrs.Size = sizeof(HIDD_ATTRIBUTES);
         if (HidD_GetAttributes(h, &attrs)) {
           HIDP_CAPS caps;
-          if (query_caps(h, caps) && is_vmouse_device(attrs, caps)) {
+          if (query_caps(h, caps) && is_vmouse_device(h, attrs, caps)) {
             found = true;
             CloseHandle(h);
             break;

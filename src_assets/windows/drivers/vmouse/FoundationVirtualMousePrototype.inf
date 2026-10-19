@@ -1,0 +1,94 @@
+;/*++
+;
+;Copyright (c) Microsoft Corporation All rights Reserved
+;
+;Module Name:
+;
+;    FoundationVirtualMousePrototype.inf
+;
+;Abstract:
+;    INF file for installing HID minidriver (UMDF 2 version)
+;
+; Test prototype. Signing and installation are separate local stages.
+;
+; Important:
+;    This INF depends on MsHidUmdf.inf, which was introduced in build 22000
+;
+;--*/
+[Version]
+Signature="$WINDOWS NT$"
+Class=HIDClass
+ClassGuid={745a17a0-74d3-11d0-b6fe-00a0c90f57da}
+Provider=%ProviderString%
+DriverVer = 10/19/2026,4.32.8.6
+CatalogFile=FoundationVirtualMousePrototype.cat
+PnpLockdown = 1
+
+[DestinationDirs]
+DefaultDestDir = 13
+
+[SourceDisksNames]
+1=%Disk_Description%,,,
+
+[SourceDisksFiles]
+FoundationVirtualMousePrototype.dll=1
+
+; ================= Device section =====================
+
+[Manufacturer]
+%ManufacturerString%=Microsoft, NTamd64.10.0...22000
+
+[Microsoft.NTamd64.10.0...22000]
+%DeviceDesc%=FoundationVirtualMousePrototype, root\FoundationVirtualMousePrototype
+
+[FoundationVirtualMousePrototype.NT]
+CopyINF=FoundationVirtualMouseAccess.inf
+CopyFiles=UMDriverCopy
+Include=MsHidUmdf.inf
+Needs=MsHidUmdf.NT
+Include=WUDFRD.inf
+Needs=WUDFRD_LowerFilter.NT
+
+[FoundationVirtualMousePrototype.NT.hw]
+Include=MsHidUmdf.inf
+Needs=MsHidUmdf.NT.hw
+Include=WUDFRD.inf
+Needs=WUDFRD_LowerFilter.NT.hw
+
+[FoundationVirtualMousePrototype.NT.Services]
+Include=MsHidUmdf.inf
+Needs=MsHidUmdf.NT.Services
+Include=WUDFRD.inf
+Needs=WUDFRD_LowerFilter.NT.Services
+
+[FoundationVirtualMousePrototype.NT.Filters]
+Include=WUDFRD.inf
+Needs=WUDFRD_LowerFilter.NT.Filters
+
+[FoundationVirtualMousePrototype.NT.Wdf]
+UmdfService="FoundationVirtualMousePrototype", FoundationVirtualMousePrototype_Install
+UmdfServiceOrder=FoundationVirtualMousePrototype
+UmdfKernelModeClientPolicy=AllowKernelModeClients
+UmdfFileObjectPolicy=AllowNullAndUnknownFileObjects
+UmdfMethodNeitherAction=Copy
+UmdfFsContextUsePolicy=CanUseFsContext2
+
+[FoundationVirtualMousePrototype_Install]
+UmdfLibraryVersion=2.15.0
+ServiceBinary="%13%\FoundationVirtualMousePrototype.dll"
+
+; ================= copy files =====================
+
+[UMDriverCopy]
+FoundationVirtualMousePrototype.dll
+
+;---------------------------------------------------------------;
+
+[Strings]
+ProviderString     ="Foundation"
+ManufacturerString ="Foundation"
+ClassName          ="Sample Device"
+Disk_Description   ="Foundation Virtual Mouse Prototype Disk"
+DeviceDesc         ="Foundation Virtual Mouse Prototype"
+WudfRdDisplayName  ="Windows Driver Foundation - User-mode Driver Framework Reflector"
+

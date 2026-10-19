@@ -47,7 +47,7 @@ Si Foundation Sunshine vous est utile, laissez une [⭐ Star](https://github.com
 
 Dans la [dernière version stable](https://github.com/AlkaidLab/foundation-sunshine/releases/latest), ouvrez **Assets** et téléchargez le fichier se terminant par `WindowsInstaller.exe`. Utilisez l'installateur pour la première installation ; `Portable-x64.zip` (non recommandé) uniquement pour des besoins particuliers, comme plusieurs instances. Pour découvrir les nouveautés, consultez les [pré-versions](https://github.com/AlkaidLab/foundation-sunshine/releases).
 
-Prévoyez Windows 10 22H2 ou plus récent et un GPU AMD, Intel ou NVIDIA avec encodage vidéo matériel. La qualité, la résolution et la fréquence dépendent du GPU, des pilotes, du réseau et du client.
+Prévoyez Windows 11 et un GPU AMD, Intel ou NVIDIA avec encodage vidéo matériel. La qualité, la résolution et la fréquence dépendent du GPU, des pilotes, du réseau et du client.
 
 ### Clients (Moonlight)
 

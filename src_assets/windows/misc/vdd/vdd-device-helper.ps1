@@ -8,7 +8,8 @@ param(
 
     [string] $ScriptDirectory,
 
-    [switch] $PreserveHealthyExisting
+    [switch] $PreserveHealthyExisting,
+    [string] $ConfigDirectory
 )
 
 $ErrorActionPreference = 'Stop'
@@ -255,14 +256,6 @@ function Test-VddVersionAtLeast([string] $InstalledVersion, [string] $BundledVer
         $installed = [version] $InstalledVersion
         $bundled = [version] $BundledVersion
 
-        # Win10 packages moved away from the legacy 99.x/100.x DriverVer
-        # range because those versions prevent monitor enumeration on 22H2.
-        # Treat an installed legacy package as an explicit migration target;
-        # a plain numeric comparison would otherwise preserve it forever.
-        if ($bundled.Major -eq 15 -and $installed.Major -ge 99) {
-            return $false
-        }
-
         return $installed -ge $bundled
     }
     catch {
@@ -311,7 +304,7 @@ function Get-VddPaths([string] $Directory) {
         Root = $root
         DriverRoot = Join-Path $scripts 'driver'
         Dist = $dist
-        ConfigDir = Join-Path $root 'config'
+        ConfigDir = $(if ($ConfigDirectory) { [IO.Path]::GetFullPath($ConfigDirectory) } else { Join-Path $root 'config' })
         Nefcon = $nefcon
     }
 }
@@ -320,53 +313,14 @@ function Resolve-VddPayload([string] $Directory, [string] $BuildOverride) {
     $paths = Get-VddPaths $Directory
     $rawBuild = $BuildOverride
     if (-not $rawBuild) {
-        $registryView = if ([Environment]::Is64BitOperatingSystem) {
-            [Microsoft.Win32.RegistryView]::Registry64
-        }
-        else {
-            [Microsoft.Win32.RegistryView]::Default
-        }
-        $baseKey = [Microsoft.Win32.RegistryKey]::OpenBaseKey(
-            [Microsoft.Win32.RegistryHive]::LocalMachine,
-            $registryView)
-        $versionKey = $baseKey.OpenSubKey('SOFTWARE\Microsoft\Windows NT\CurrentVersion')
-        try {
-            if ($versionKey) {
-                $rawBuild = [string] $versionKey.GetValue('CurrentBuildNumber', '')
-                if (-not $rawBuild) {
-                    $rawBuild = [string] $versionKey.GetValue('CurrentBuild', '')
-                }
-            }
-        }
-        finally {
-            if ($versionKey) {
-                $versionKey.Dispose()
-            }
-            $baseKey.Dispose()
-        }
+        $rawBuild = [string](Get-ItemPropertyValue -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name CurrentBuildNumber -ErrorAction Stop)
     }
-
     [int] $buildNumber = 0
     $hasBuildNumber = [int]::TryParse($rawBuild, [ref] $buildNumber)
-    if (-not $rawBuild) {
-        Write-Warning 'Could not detect Windows build; defaulting to Win10 payload.'
+    if (-not $hasBuildNumber -or $buildNumber -lt 22000) {
+        throw 'Foundation Sunshine Lite requires Windows 11 (build 22000 or later).'
     }
-    elseif (-not $hasBuildNumber) {
-        Write-Warning "Ignoring non-numeric Windows build '$rawBuild'; defaulting to Win10 payload."
-    }
-
-    $latest = Join-Path $paths.DriverRoot 'latest'
-    $driverDir = Join-Path $paths.DriverRoot 'win10'
-    if (-not (Test-Path -LiteralPath (Join-Path $driverDir 'ZakoVDD.inf'))) {
-        $driverDir = $latest
-    }
-    if ($hasBuildNumber -and $buildNumber -ge 22000 -and
-        (Test-Path -LiteralPath (Join-Path $latest 'ZakoVDD.inf'))) {
-        $driverDir = $latest
-    }
-    if (-not (Test-Path -LiteralPath (Join-Path $driverDir 'ZakoVDD.inf'))) {
-        $driverDir = $paths.DriverRoot
-    }
+    $driverDir = Join-Path $paths.DriverRoot 'latest'
 
     $configSource = Join-Path $paths.DriverRoot 'vdd_settings.xml'
     if (Test-Path -LiteralPath (Join-Path $driverDir 'vdd_settings.xml')) {

@@ -52,7 +52,7 @@ Open the [latest regular release](https://github.com/AlkaidLab/foundation-sunshi
 - **Portable deployment (not recommended):** Choose `Portable-x64.zip`; the filename may include a version prefix. Use it only for special needs such as running multiple instances.
 - **Trying new features:** Browse [pre-releases](https://github.com/AlkaidLab/foundation-sunshine/releases) and read their known issues before installing.
 
-Start with Windows 10 22H2 or newer and an AMD, Intel, or NVIDIA GPU with hardware video encoding. Available image quality, resolution, and frame rate depend on your GPU, drivers, network, and client.
+Start with Windows 11 and an AMD, Intel, or NVIDIA GPU with hardware video encoding. Available image quality, resolution, and frame rate depend on your GPU, drivers, network, and client.
 
 ### Clients (Moonlight)
 

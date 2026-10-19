@@ -16,7 +16,7 @@ body:
         - [ ] I have searched existing issues and feature requests to avoid duplicates
         - [ ] This feature is not already available in the latest version
         - [ ] This feature is specific to the server-side (Sunshine), not the client-side (Moonlight)
-        - [ ] I am using Windows 10/Windows 11 (Virtual Display feature requires Windows 10 22H2 or higher)
+        - [ ] I am using Windows 11 (Virtual Display feature requires Windows 11)
         ---
 
   - type: dropdown
@@ -150,9 +150,8 @@ body:
     id: host-os
     attributes:
       label: "💻 Host Operating System"
-      description: "Your host OS (Only Windows 10/Windows 11 supported)"
+      description: "Your host OS (Only Windows 11 supported)"
       options:
-        - "Windows 10"
         - "Windows 11"
     validations:
       required: false
@@ -161,8 +160,8 @@ body:
     id: os-version
     attributes:
       label: "📌 Windows Specific Version"
-      description: "Please get the specific Windows version from your system (e.g., Windows 10 22H2, Windows 11 23H2, Windows 10 LTSC 2021, etc.)"
-      placeholder: "e.g. Windows 10 22H2 / Windows 11 23H2 / Windows 10 LTSC 2021"
+      description: "Please get the specific Windows version from your system (e.g., Windows 11 24H2, Windows 11 25H2, etc.)"
+      placeholder: "e.g. Windows 11 24H2 / Windows 11 25H2"
     validations:
       required: false
 

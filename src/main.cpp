@@ -198,6 +198,17 @@ main(int argc, char *argv[]) {
   lifetime::argv = argv;
 
 #ifdef _WIN32
+  using rtl_get_version_fn = LONG(WINAPI *)(OSVERSIONINFOEXW *);
+  const auto version_api = reinterpret_cast<rtl_get_version_fn>(
+    GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetVersion"));
+  OSVERSIONINFOEXW host_version {};
+  host_version.dwOSVersionInfoSize = sizeof(host_version);
+  if (!version_api || version_api(&host_version) < 0 ||
+      host_version.dwBuildNumber < 22000 || host_version.wProductType != VER_NT_WORKSTATION) {
+    std::cerr << "Foundation Sunshine Lite requires Windows 11.\n";
+    return 1;
+  }
+
   // Note: this only fires on a normal `return` from main. If the program
   // crashes mid-run (uncaught exception, AV, abort/terminate), atexit is
   // not invoked, so the service supervisor still observes a non-zero exit

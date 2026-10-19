@@ -107,20 +107,7 @@ install(FILES "${SUNSHINE_SOURCE_ASSETS_DIR}/windows/misc/vdd/driver/vdd_setting
         DESTINATION "scripts/driver"
         COMPONENT vdd)
 if(VDD_DRIVER_AVAILABLE)
-  install(FILES "${VDD_DRIVER_DIR}/ZakoVDD.dll"
-                "${VDD_DRIVER_DIR}/ZakoVDD.inf"
-                "${VDD_DRIVER_DIR}/zakovdd.cat"
-                "${VDD_DRIVER_DIR}/ZakoVDD.cer"
-          DESTINATION "scripts/driver/latest"
-          COMPONENT vdd)
-endif()
-if(VDD_WIN10_DRIVER_AVAILABLE)
-  install(FILES "${VDD_WIN10_DRIVER_DIR}/ZakoVDD.dll"
-                "${VDD_WIN10_DRIVER_DIR}/ZakoVDD.inf"
-                "${VDD_WIN10_DRIVER_DIR}/zakovdd.cat"
-                "${VDD_WIN10_DRIVER_DIR}/ZakoVDD.cer"
-          DESTINATION "scripts/driver/win10"
-          COMPONENT vdd)
+  install(DIRECTORY "${VDD_DRIVER_DIR}/" DESTINATION "scripts/driver/latest" COMPONENT vdd)
 endif()
 
 # Vulkan HDR WSI compatibility layer shipped by newer ZakoVDD releases.
@@ -147,18 +134,15 @@ else()
   message(STATUS "Zako Vulkan HDR bridge artifacts are not present in the selected VDD package")
 endif()
 
-# vmouse: scripts from source tree, driver binaries + cert from download cache
+# vmouse: source-pinned Foundation driver and mandatory access-policy companion
 install(FILES "${SUNSHINE_SOURCE_ASSETS_DIR}/windows/misc/vmouse/install-vmouse.bat"
               "${SUNSHINE_SOURCE_ASSETS_DIR}/windows/misc/vmouse/uninstall-vmouse.bat"
+              "${SUNSHINE_SOURCE_ASSETS_DIR}/windows/misc/vmouse/vmouse-device-helper.ps1"
+              "${SUNSHINE_SOURCE_ASSETS_DIR}/windows/misc/vmouse/device-access.cs"
         DESTINATION "scripts/vmouse"
         COMPONENT assets)
 if(VMOUSE_DRIVER_AVAILABLE)
-  install(FILES "${VMOUSE_DRIVER_DIR}/ZakoVirtualMouse.dll"
-                "${VMOUSE_DRIVER_DIR}/ZakoVirtualMouse.inf"
-                "${VMOUSE_DRIVER_DIR}/ZakoVirtualMouse.cat"
-                "${VMOUSE_DRIVER_DIR}/ZakoVirtualMouse.cer"
-          DESTINATION "scripts/vmouse/driver"
-          COMPONENT assets)
+  install(DIRECTORY "${VMOUSE_DRIVER_DIR}/" DESTINATION "scripts/vmouse/driver" COMPONENT assets)
 endif()
 
 install(DIRECTORY "${SUNSHINE_SOURCE_ASSETS_DIR}/windows/misc/helper/"
@@ -239,6 +223,3 @@ set(CPACK_COMPONENT_GAMEPAD_GROUP "Scripts")
 
 # include specific packaging
 include(${CMAKE_MODULE_PATH}/packaging/windows_innosetup.cmake)
-# Legacy NSIS/WiX (kept for reference, no longer used)
-# include(${CMAKE_MODULE_PATH}/packaging/windows_nsis.cmake)
-# include(${CMAKE_MODULE_PATH}/packaging/windows_wix.cmake)

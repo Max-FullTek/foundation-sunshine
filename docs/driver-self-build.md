@@ -1,43 +1,34 @@
-# 虛擬驅動自建計畫
+# 自建驅動的包版與獨立更新
 
-本計畫涵蓋虛擬滑鼠相容實作，以及 Zako VDD 官方原始碼試編。兩個驅動維持獨立；後續可由同一個 Sunshine 安裝包管理。試編成功不代表已通過安裝、串流或遊戲相容性測試。
+Foundation Sunshine Lite 僅支援 Windows 11 x64。VDD 與虛擬滑鼠維持獨立專案；Lite 安裝包內附固定版本，也可使用獨立驅動 ZIP 安裝、升級與移除，不必重編主程式。
 
-## 邊界與基線
+## 來源與固定版本
 
-- 現用 Mouse：`AlkaidLab/zako-vmouse-release` v1.3.2。已安裝 DLL 的 SHA-256 是 `D85AFE625E100E1D702737E153AD995A8CCE21D5F264170D13781FB392E98CE4`。目前未找到公開驅動原始碼；反組結果是行為線索，不能視為完整規格或零風險證明。
-- 現用 VDD：v0.17.5，來源 commit `88d117431549bcba22fea27ded3d4804c79b51fb`。
-- 官方目前 VDD：v0.18.0，來源 commit `22b15167bec5b9ec9ae76e75cbc697704965ab08`，MIT 授權。首次試編固定此提交，並不更新 Sunshine 現有驅動版本。
-- 原型不自動安裝、匯入憑證、變更 Secure Boot／測試簽署設定或替換現用驅動。需要實機安裝的階段另行安排。
-- 不合併 Mouse 與 VDD 的裝置架構，不擴充鍵盤、檔案傳輸或聯網能力。
+- VDD：`Max-FullTek/zako-vdd`，來源 `9f6b00b20cf7c8584ee06e09a362514773edf70f`，驅動版本 `100.0.18.0`。
+- 滑鼠：`Max-FullTek/foundation-virtual-mouse`，來源 `ceeff46c393854c5855e380c77684a1bb163b63f`，來源版本 `0.4.0.0`，簽署 INF 的 DriverVer 為 `4.32.8.6`（升降級依此判斷），搭配權限 Extension `0.1.0.0`。兩份 INF／CAT 必須一起發佈，不能只替換 DLL。
+- 簽署產物保存於 `src_assets/windows/drivers/vdd/`、`vmouse/`。每包的 `package.json` 記錄來源、CI、版本及逐檔 SHA-256；保留 MIT／MS-PL 授權。簽署後的 INF 與 DLL 不得直接修改或改名。
+- `verify-driver-certificate.ps1` 固定公有憑證 SHA-256，驗證檔案摘要、憑證有效期及每份 catalog 的密碼學簽章。Windows 匯入驅動時再執行 catalog 成員驗證。不下載上游舊滑鼠、舊 VDD 或 Windows 10 備援。
 
-## Mouse：先完成相容性規格，再實作
+## 發佈與更新
 
-1. **建立行為對照。** 交叉核對 `src/platform/windows/virtual_mouse.cpp`、`input.cpp`、原版 HID 描述與反組的所有請求分支。列出每個欄位、回傳值、長度限制、佇列和生命週期；尚未確認的行為獨立標記。
-2. **釐清已知差異。** Sunshine 傳送 8-byte report：ID、按鍵、X/Y 各兩 bytes、垂直／水平滾輪。現用驅動描述只有五鍵、相對 X/Y 與垂直滾輪；水平滾輪的實際效果、7-byte 相容路徑與滿佇列合併行為必須先對照原版確認，不能默認支援或默默省略。
-3. **建立自己的原始碼與建置。** 以 Microsoft `Windows-driver-samples/hid/vhidmini2` 的 UMDF 範例為起點，固定來源 commit、保留授權。依已確認的介面獨立撰寫滑鼠功能；先決定自己的裝置識別、並存／切換方式，避免錯開原版裝置。CI 記錄來源、工具鏈、產物摘要，簽署與安裝另列階段。
-4. **比較原版與原型。** 相同輸入序列比較 HID 輸出、事件順序、按鍵狀態及錯誤回應。固定案例包括五鍵、拖曳、連續／大幅位移、正負滾輪、組合操作、非法長度／ID、佇列滿載。非法資料先在離線測試層驗證，不直接對現用驅動模糊測試。
-5. **實機驗收後才替換。** VoidLink 觸控板、實體滑鼠與實際 Raw Input 遊戲；比較延遲、抖動與漏事件。驗證中斷時放開按鍵、連線恢復、休眠喚醒、裝置重新列舉、SendInput 回退。保留原版回復方式。
+更新驅動時，先在各自專案建置及簽署，再將完整產物與來源紀錄更新到對應目錄。重新簽署會改變 DLL／CAT 雜湊，必須更新 manifest；更換簽署憑證則必須獨立核對並更新驗證器的 pin。
 
-完成標準：每個已知原版行為均對應「相同／刻意不同／未驗證」及證據；必需功能不得仍是未驗證。編譯成功只完成建置階段。
+執行 `Package independent Foundation drivers` workflow，可選 VDD、滑鼠或兩者。它只驗證並包裝現有簽署產物與固定雜湊的 nefcon，不編譯 Lite／GUI，也不安裝驅動。只更新驅動產物的 master 提交會執行此 workflow，跳過完整 Lite workflow。共用安裝腳本、核心或 GUI 改動仍須正常建置。
 
-## VDD：官方來源試編與後續驗收
+本機入口：
 
-1. **未修改來源試編。** 在一次性 Windows 2022 runner，依固定上游 workflow 使用 VS2022、WDK、`ZakoVDD.sln`、Release x64；以 `SignMode=Off` 跳過簽署，保留原專案靜態分析設定。執行上游 EDID profile tests。
-2. **保存可追溯證據。** 保留 source commit、workflow commit、runner／VS／WDK 版本、完整編譯 log／binlog、DLL／INF／設定檔與 SHA-256。確認 tracked source 沒有被改寫。這是可追溯試編，尚不承諾逐位元可重現；時間戳、工具鏈和簽章會影響二進位。
-3. **相容版本比對。** v0.18.0 成功後，對現用 v0.17.5 做相同試編；比較控制協定、sealed frame／cursor 通道、設定檔與最低 Windows／IddCx 需求。不得把新版能編譯視為可直接取代現版。
-4. **先處理發行條件。** 規劃自己的簽署、信任與驅動識別。現有 `verify-driver-certificate.ps1` 固定上游憑證，不能直接放入自建產物。安裝／升級／移除與回復均須有明確方案。
-5. **安排獨立實機測試。** 測試建立／移除顯示器、解析度／更新率、SDR／HDR、畫面／游標通道、串流開始／結束、斷線恢復與休眠喚醒；與現版比較，再決定是否進入發行包。
+```powershell
+./scripts/package-drivers.ps1 -Component all -OutputDirectory G:/output/foundation-drivers
+```
 
-試編入口：[Zako VDD source build check](../.github/workflows/zako-vdd-build-check.yml)。僅產生實驗 artifacts，不建立 Release，也不修改本機。上游工具的 Vulkan／HDR 診斷完整建置不屬於首次 DLL 試編，待版本相容性確認後安排。
+輸出目錄必須尚不存在。各 ZIP 解壓後，以管理員執行 `Install.cmd` 或 `Uninstall.cmd`。安裝會先停止 Sunshine 服務；只在驗證成功後恢復原本運行的服務。VDD 更新沿用已安裝 Lite 的設定目錄，不覆蓋既有 XML。較舊 Lite 的內附驅動不應降級健康的較新驅動。Windows 要求重啟時回傳 3010，不自動重新啟動電腦。
 
-### 首次試編結果與下一步
+Lite 本身的安裝包仍然內附該次提交固定的驅動版本。只有要更新 Lite 安裝包內附的版本時，才需要重新包裝 Lite；使用者可先單獨更新驅動。現階段提供獨立手動更新，沒有背景自動下載驅動或自動信任新憑證。
 
-官方相同 commit 的 [v0.18.0 建置](https://github.com/qiin2333/zako-vdd/actions/runs/39015528849) 已通過驅動編譯與 EDID profile tests，證明上游環境能編出來。我們的[獨立試編](https://github.com/Max-FullTek/foundation-sunshine/actions/runs/39061210260) 停在 WDK 準備，尚未執行 MSBuild 編譯或 EDID tests；artifact 目前只有來源證據，沒有新 DLL。
+## 簽署與安裝邊界
 
-已確認的流程差異：上游使用遞迴搜尋；我們的試編少了遞迴搜尋，找不到實際位於 `Windows Kits/10/Vsix/VS2022/10.0.26100.0/amd64/WDK.vsix` 的套件。下次先修正套件探索，並在 WDK 安裝後重新檢查 build tasks／headers，避免已具備編譯環境卻仍要求 VSIX 安裝。上游成功紀錄中的 VSIX exit code 是 `2001`，因此不能只照目前試編的 exit-code 白名單判定工具鏈不可用；需核對安裝紀錄與實際 tasks。這些差異屬於試編環境流程，尚無 VDD 原始碼編譯失敗證據。
+現用憑證指紋為 `78983DA4728FBB6B57779A60F6B1A2F071C84F07`，有效至 2027-01-18。這是本機簽署憑證，並非 Microsoft WHQL／attestation。安裝介面會明示加入信任存放區；簽章到期或不同憑證會拒絕包裝，不自動信任隨包的新憑證，也不變更 Secure Boot／測試簽署設定。
 
-## 本次收工條件與下一階段
+滑鼠安裝只處理 Foundation 的確切 root／child 識別。先匯入權限 Extension，再建立或更新 root；必須確認 child 的即時 DACL 僅允許 SYSTEM／管理員，才回報成功並清除確切的舊 Zako 滑鼠。更新失敗時保持未驗證完成的 root 停用、保留 DriverStore 套件供修復，不偽裝成功或自動重開服務。VDD 沿用既有精確裝置識別與更新交易復原流程。
 
-- 確認既有 Panel／Core Actions 的實際結果；未完成或失敗就保留狀態與原因，不宣稱已通過。
-- 完成上述計畫與首次 VDD 試編，保存成功產物或明確失敗位置。
-- 本次不安裝原型，不實作整個 Mouse。下一階段先完成 Mouse 行為對照，再決定原型實作；VDD 依試編結果決定先補環境還是進行 v0.17.5 基線比對。
+現有實機紀錄涵蓋 VDD 基本 HDR／退出後螢幕恢復，以及滑鼠移動、左右鍵、拖曳、雙向捲動與權限限制。此整合沒有執行新安裝、重開機或完整生命週期驗收；套件納入正式包版不代表這些項目已驗證，也不構成無後門／無遙測的證明。

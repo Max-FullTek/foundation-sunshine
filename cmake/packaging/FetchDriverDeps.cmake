@@ -1,35 +1,5 @@
-# FetchDriverDeps.cmake — Download driver dependencies from GitHub Releases
-#
-# Downloads pre-built signed driver binaries at configure time.
-# All downloads are cached in ${CMAKE_BINARY_DIR}/_driver_deps/.
-#
-# Configuration (CMake cache variables):
-#   FETCH_DRIVER_DEPS       — Enable/disable downloads (default: ON)
-#   DRIVER_DEPS_REQUIRED    — If ON (default), missing driver files are a
-#                             FATAL_ERROR. If OFF (typical for fork-PR CI),
-#                             missing files become a WARNING and the affected
-#                             driver is excluded from packaging.
-#   VMOUSE_DRIVER_VERSION   — ZakoVirtualMouse release tag (e.g. v1.1.0)
-#   VMOUSE_PUBLIC_REPO      — Public repo hosting vmouse release assets
-#                             and their GitHub SHA-256 digests
-#                             (default: AlkaidLab/zako-vmouse-release)
-#   VDD_DRIVER_VERSION      — ZakoVDD release tag (e.g. v0.1.4)
-#   VDD_WIN10_DRIVER_VERSION — Win10-pinned ZakoVDD release tag
-#   VDD_DRIVER_SHA256 / VDD_WIN10_DRIVER_SHA256 — required for custom archives;
-#                             known pinned versions use their built-in digest
-#   NEFCON_VERSION          — nefcon release tag (e.g. v1.10.0)
-#   NEFCON_SHA256           — expected SHA-256 for a custom nefcon release;
-#                             known pinned versions use their built-in digest
-#   VIGEMBUS_VERSION        — pinned ViGEmBus release tag
-#   VIGEMBUS_ASSET_NAME     — pinned multi-architecture installer asset
-#   VIGEMBUS_SHA256         — expected installer digest
-#
-# Output variables (CACHE FORCE, available to parent):
-#   VMOUSE_DRIVER_DIR       — Directory containing vmouse driver files
-#   VDD_DRIVER_DIR          — Directory containing latest VDD driver files
-#   VDD_WIN10_DRIVER_DIR    — Directory containing Win10-pinned VDD driver files
-#   NEFCON_DRIVER_DIR       — Directory containing nefconw.exe
-#   VIGEMBUS_INSTALLER      — Hash-verified installer bundled into packages
+# Own VDD/mouse payloads are source-pinned and verified, never fetched from upstream.
+# nefcon and ViGEmBus remain separately pinned external installation dependencies.
 
 include_guard(GLOBAL)
 
@@ -41,34 +11,19 @@ option(FETCH_DRIVER_DEPS "Download driver dependencies from GitHub Releases" ON)
 option(DRIVER_DEPS_REQUIRED "Treat missing driver dependencies as a fatal error" ON)
 
 # Version pins
-set(VMOUSE_DRIVER_VERSION "v1.3.2" CACHE STRING "ZakoVirtualMouse driver version tag")
-set(VDD_DRIVER_VERSION "v0.17.5" CACHE STRING "ZakoVDD driver version tag")
-set(VDD_WIN10_DRIVER_VERSION "v0.15.10" CACHE STRING "Win10-pinned ZakoVDD driver version tag")
-set(VDD_DRIVER_ASSET_NAME "zakovdd.zip" CACHE STRING "Latest ZakoVDD release asset name")
-set(VDD_WIN10_DRIVER_ASSET_NAME "zakovdd.zip" CACHE STRING "Win10-pinned ZakoVDD release asset name")
-set(VDD_DRIVER_SHA256 "" CACHE STRING "SHA256 required for a custom ZakoVDD release archive")
-set(VDD_WIN10_DRIVER_SHA256 "" CACHE STRING "SHA256 required for a custom Win10 ZakoVDD release archive")
 # GitHub release asset digests, independently matched against downloaded bytes.
-set(_VDD_SHA256_V0_17_5 "e4177a0c03cb0778e0cf963f552f02c295ab855e0600083f9413446b8c238f6f")
-set(_VDD_SHA256_V0_15_10 "b73331f1f319478e4718a03beee76c52883df0f90978f4ff100b15ae36fd0a46")
 set(NEFCON_VERSION "v1.18.74" CACHE STRING "nefcon version tag")
 set(NEFCON_SHA256 "" CACHE STRING "SHA256 of a custom nefcon release archive")
 set(_NEFCON_SHA256_V1_18_74 "625abcdea9e84577d094ab65a8542c9977eb50f2371d216961af01cf4901f172")
-set(_NEFCON_SHA256_V1_17_40 "812bae7ed7dfb7d6d2284bc7de2f8ccebc92ed2a0b1ae893c53b337096e50c1a")
 if(NEFCON_VERSION STREQUAL "v1.18.74")
   set(_NEFCON_EFFECTIVE_SHA256 "${_NEFCON_SHA256_V1_18_74}")
-elseif(NEFCON_VERSION STREQUAL "v1.17.40")
-  # Keep existing build directories usable when their cached version predates
-  # the v1.18.74 default. A release version must always use its matching digest.
-  set(_NEFCON_EFFECTIVE_SHA256 "${_NEFCON_SHA256_V1_17_40}")
 else()
   set(_nefcon_sha256_is_stale FALSE)
   if(DEFINED NEFCON_CUSTOM_SHA256_VERSION AND
       NOT "${NEFCON_CUSTOM_SHA256_VERSION}" STREQUAL "${NEFCON_VERSION}" AND
       "${NEFCON_SHA256}" STREQUAL "${NEFCON_CUSTOM_SHA256_VALUE}")
     set(_nefcon_sha256_is_stale TRUE)
-  elseif("${NEFCON_SHA256}" STREQUAL "${_NEFCON_SHA256_V1_18_74}" OR
-      "${NEFCON_SHA256}" STREQUAL "${_NEFCON_SHA256_V1_17_40}")
+  elseif("${NEFCON_SHA256}" STREQUAL "${_NEFCON_SHA256_V1_18_74}")
     set(_nefcon_sha256_is_stale TRUE)
   endif()
   if(NOT NEFCON_SHA256 OR _nefcon_sha256_is_stale)
@@ -88,16 +43,10 @@ set(VIGEMBUS_SHA256 "89220a7865076b342892f98865f3499fb7c4cfd673159e89d352c360fd0
     CACHE STRING "SHA256 of the pinned ViGEmBus installer")
 
 # Repositories
-set(VMOUSE_PUBLIC_REPO "AlkaidLab/zako-vmouse-release" CACHE STRING
-    "Public repo (owner/name) hosting ZakoVirtualMouse release assets")
-set(_VDD_REPO "qiin2333/zako-vdd")
 set(_NEFCON_REPO "nefarius/nefcon")
 
 # Output directories
 set(DRIVER_DEPS_CACHE "${CMAKE_BINARY_DIR}/_driver_deps" CACHE PATH "Driver dependencies cache")
-set(VMOUSE_DRIVER_DIR "${DRIVER_DEPS_CACHE}/vmouse" CACHE PATH "" FORCE)
-set(VDD_DRIVER_DIR "${DRIVER_DEPS_CACHE}/vdd" CACHE PATH "" FORCE)
-set(VDD_WIN10_DRIVER_DIR "${DRIVER_DEPS_CACHE}/vdd-win10" CACHE PATH "" FORCE)
 set(NEFCON_DRIVER_DIR "${DRIVER_DEPS_CACHE}/nefcon" CACHE PATH "" FORCE)
 set(VIGEMBUS_DIR "${DRIVER_DEPS_CACHE}/vigembus" CACHE PATH "" FORCE)
 set(VIGEMBUS_INSTALLER "${VIGEMBUS_DIR}/${VIGEMBUS_ASSET_NAME}"
@@ -106,6 +55,30 @@ set(VIGEMBUS_INSTALLER "${VIGEMBUS_DIR}/${VIGEMBUS_ASSET_NAME}"
 set(_DRIVER_DOWNLOAD_ATTEMPTS 3)
 set(_DRIVER_DOWNLOAD_TIMEOUT_SECONDS 60)
 set(_DRIVER_DOWNLOAD_INACTIVITY_TIMEOUT_SECONDS 15)
+
+# Vendored signed packages keep builds independent of expiring private CI artifacts.
+# Their package.json records independent source/version/signing provenance.
+set(VMOUSE_DRIVER_DIR "${CMAKE_SOURCE_DIR}/src_assets/windows/drivers/vmouse" CACHE PATH "" FORCE)
+set(VDD_DRIVER_DIR "${CMAKE_SOURCE_DIR}/src_assets/windows/drivers/vdd" CACHE PATH "" FORCE)
+foreach(_driver IN ITEMS VDD VirtualMouse)
+  if(_driver STREQUAL "VDD")
+    set(_directory "${VDD_DRIVER_DIR}")
+    set(_available VDD_DRIVER_AVAILABLE)
+  else()
+    set(_directory "${VMOUSE_DRIVER_DIR}")
+    set(_available VMOUSE_DRIVER_AVAILABLE)
+  endif()
+  # A pwsh/MSYS parent can export an incompatible PSModulePath. Let Windows
+  # PowerShell construct its own built-in module paths in this child process.
+  execute_process(COMMAND "${CMAKE_COMMAND}" -E env --unset=PSModulePath
+    "$ENV{SystemRoot}/System32/WindowsPowerShell/v1.0/powershell.exe" -NoProfile -ExecutionPolicy Bypass -File
+    "${CMAKE_SOURCE_DIR}/src_assets/windows/misc/verify-driver-certificate.ps1"
+    -Driver "${_driver}" -Directory "${_directory}" RESULT_VARIABLE _verified)
+  if(NOT _verified EQUAL 0)
+    message(FATAL_ERROR "Own ${_driver} package integrity/signing verification failed")
+  endif()
+  set(${_available} TRUE CACHE INTERNAL "" FORCE)
+endforeach()
 
 if(NOT FETCH_DRIVER_DEPS)
   message(STATUS "Driver dependency downloads disabled (FETCH_DRIVER_DEPS=OFF)")
@@ -192,221 +165,6 @@ function(_driver_download url output_path)
   _driver_download_with_retries("${url}" "${output_path}" "${_expected_sha256}")
 endfunction()
 
-function(_download_github_release_metadata repository version output_path)
-  if(EXISTS "${output_path}")
-    return()
-  endif()
-
-  set(_url "https://api.github.com/repos/${repository}/releases/tags/${version}")
-  set(_temporary_path "${output_path}.download")
-  set(_headers
-    "Accept: application/vnd.github+json"
-    "X-GitHub-Api-Version: 2022-11-28"
-    "User-Agent: Sunshine-Foundation-CMake")
-  # CI already scopes this token to trusted events. Authenticate metadata
-  # requests to avoid the shared runner IP's anonymous API rate limit.
-  if(DEFINED ENV{GITHUB_TOKEN} AND NOT "$ENV{GITHUB_TOKEN}" STREQUAL "")
-    list(APPEND _headers "Authorization: Bearer $ENV{GITHUB_TOKEN}")
-  endif()
-  _driver_download_with_retries(
-    "${_url}"
-    "${_temporary_path}"
-    ""
-    ${_headers})
-
-  if(EXISTS "${_temporary_path}")
-    file(RENAME "${_temporary_path}" "${output_path}")
-  endif()
-endfunction()
-
-function(_github_release_asset_sha256 metadata_path asset_name output_variable)
-  set(${output_variable} "" PARENT_SCOPE)
-  if(NOT EXISTS "${metadata_path}")
-    return()
-  endif()
-
-  file(READ "${metadata_path}" _release_json)
-  string(JSON _asset_count ERROR_VARIABLE _json_error LENGTH "${_release_json}" assets)
-  if(NOT _json_error STREQUAL "NOTFOUND" OR _asset_count EQUAL 0)
-    return()
-  endif()
-
-  math(EXPR _last_asset_index "${_asset_count} - 1")
-  foreach(_asset_index RANGE 0 ${_last_asset_index})
-    string(JSON _name ERROR_VARIABLE _name_error GET "${_release_json}" assets ${_asset_index} name)
-    if(NOT _name_error STREQUAL "NOTFOUND" OR NOT _name STREQUAL asset_name)
-      continue()
-    endif()
-
-    string(JSON _digest ERROR_VARIABLE _digest_error GET "${_release_json}" assets ${_asset_index} digest)
-    if(_digest_error STREQUAL "NOTFOUND" AND _digest MATCHES "^sha256:([0-9A-Fa-f]+)$")
-      set(_sha256 "${CMAKE_MATCH_1}")
-      string(LENGTH "${_sha256}" _sha256_length)
-      if(_sha256_length EQUAL 64)
-        string(TOLOWER "${_sha256}" _sha256)
-        set(${output_variable} "${_sha256}" PARENT_SCOPE)
-      endif()
-    endif()
-    return()
-  endforeach()
-endfunction()
-
-# ---------------------------------------------------------------------------
-# ZakoVirtualMouse (public release assets)
-# ---------------------------------------------------------------------------
-function(_fetch_vmouse_impl _files output_verified)
-  set(${output_verified} FALSE PARENT_SCOPE)
-  message(STATUS "Fetching ZakoVirtualMouse ${VMOUSE_DRIVER_VERSION} ...")
-
-  file(MAKE_DIRECTORY "${VMOUSE_DRIVER_DIR}")
-
-  if(NOT VMOUSE_PUBLIC_REPO)
-    message(WARNING "  VMOUSE_PUBLIC_REPO is empty")
-    return()
-  endif()
-
-  set(_metadata_path "${VMOUSE_DRIVER_DIR}/.release-metadata.json")
-  _download_github_release_metadata(
-    "${VMOUSE_PUBLIC_REPO}"
-    "${VMOUSE_DRIVER_VERSION}"
-    "${_metadata_path}")
-  if(NOT EXISTS "${_metadata_path}")
-    message(WARNING "  GitHub release metadata is unavailable for ${VMOUSE_DRIVER_VERSION}")
-    return()
-  endif()
-
-  message(STATUS "  Downloading from public repo ${VMOUSE_PUBLIC_REPO} ...")
-  foreach(_f ${_files})
-    _github_release_asset_sha256("${_metadata_path}" "${_f}" _expected_sha256)
-    if(NOT _expected_sha256)
-      message(WARNING "  GitHub release metadata has no SHA-256 digest for ${_f}")
-      file(REMOVE "${VMOUSE_DRIVER_DIR}/${_f}")
-      continue()
-    endif()
-    set(_url "https://github.com/${VMOUSE_PUBLIC_REPO}/releases/download/${VMOUSE_DRIVER_VERSION}/${_f}")
-    _driver_download("${_url}" "${VMOUSE_DRIVER_DIR}/${_f}" "${_expected_sha256}")
-  endforeach()
-
-  set(_all_verified TRUE)
-  foreach(_f ${_files})
-    if(NOT EXISTS "${VMOUSE_DRIVER_DIR}/${_f}")
-      set(_all_verified FALSE)
-      break()
-    endif()
-  endforeach()
-  set(${output_verified} ${_all_verified} PARENT_SCOPE)
-endfunction()
-
-# The vmouse assets are downloaded as bare filenames with no version in them, so
-# a cache populated by an older VMOUSE_DRIVER_VERSION looks complete forever and
-# a pin bump silently ships the old driver on any tree that was configured
-# before. Stamp the tag next to the files and wipe the cache when it changes.
-function(_fetch_vmouse)
-  set(_files ZakoVirtualMouse.dll ZakoVirtualMouse.inf ZakoVirtualMouse.cat ZakoVirtualMouse.cer)
-  set(_marker "${VMOUSE_DRIVER_DIR}/.release-version")
-  set(_expected_marker "${VMOUSE_PUBLIC_REPO}|${VMOUSE_DRIVER_VERSION}")
-
-  set(_stamp_ok FALSE)
-  if(EXISTS "${_marker}")
-    file(READ "${_marker}" _current)
-    string(STRIP "${_current}" _current)
-    if("${_current}" STREQUAL "${_expected_marker}")
-      set(_stamp_ok TRUE)
-    endif()
-  endif()
-
-  if(NOT _stamp_ok AND EXISTS "${VMOUSE_DRIVER_DIR}")
-    message(STATUS "  vmouse cache source or version changed; clearing ${VMOUSE_DRIVER_DIR}")
-    file(REMOVE_RECURSE "${VMOUSE_DRIVER_DIR}")
-  endif()
-
-  _fetch_vmouse_impl("${_files}" _all_verified)
-
-  # Only retain a complete, digest-verified set. File presence plus the source
-  # marker is not sufficient proof after metadata or cache files are removed.
-  if(_all_verified)
-    execute_process(
-      COMMAND powershell.exe -NoProfile -ExecutionPolicy Bypass -File
-        "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../../src_assets/windows/misc/verify-driver-certificate.ps1"
-        -Driver VirtualMouse -Directory "${VMOUSE_DRIVER_DIR}"
-      RESULT_VARIABLE _certificate_result)
-    if(NOT _certificate_result EQUAL 0)
-      message(FATAL_ERROR "Virtual mouse certificate/catalog verification failed")
-    endif()
-    file(WRITE "${_marker}" "${_expected_marker}\n")
-  else()
-    file(REMOVE_RECURSE "${VMOUSE_DRIVER_DIR}")
-  endif()
-endfunction()
-
-# ---------------------------------------------------------------------------
-# ZakoVDD  (single zip release asset)
-# ---------------------------------------------------------------------------
-function(_fetch_vdd_release variant_label version asset_name output_dir cache_prefix custom_sha256)
-  message(STATUS "Fetching ZakoVDD ${variant_label} ${version} ...")
-  if(version STREQUAL "v0.17.5" AND asset_name STREQUAL "zakovdd.zip")
-    set(_expected_sha256 "${_VDD_SHA256_V0_17_5}")
-  elseif(version STREQUAL "v0.15.10" AND asset_name STREQUAL "zakovdd.zip")
-    set(_expected_sha256 "${_VDD_SHA256_V0_15_10}")
-  else()
-    string(LENGTH "${custom_sha256}" _hash_length)
-    if(NOT _hash_length EQUAL 64 OR NOT custom_sha256 MATCHES "^[0-9a-fA-F]+$" OR
-        custom_sha256 STREQUAL _VDD_SHA256_V0_17_5 OR
-        custom_sha256 STREQUAL _VDD_SHA256_V0_15_10)
-      message(FATAL_ERROR "A matching SHA256 must be explicitly supplied for custom ZakoVDD ${variant_label} ${version}/${asset_name}")
-    endif()
-    string(TOLOWER "${custom_sha256}" _expected_sha256)
-  endif()
-  set(_zip_url "https://github.com/${_VDD_REPO}/releases/download/${version}/${asset_name}")
-  set(_zip "${DRIVER_DEPS_CACHE}/${cache_prefix}-${version}.zip")
-  set(_version_marker "${output_dir}/.release-version")
-  set(_expected_marker "${version}|${asset_name}|${_expected_sha256}")
-
-  _driver_download("${_zip_url}" "${_zip}" "${_expected_sha256}")
-
-  # Never let an old extracted payload satisfy packaging after a failed download.
-  if(NOT EXISTS "${_zip}")
-    return()
-  endif()
-
-  if(EXISTS "${_zip}")
-    set(_needs_extract FALSE)
-    if(NOT EXISTS "${output_dir}/ZakoVDD.dll")
-      set(_needs_extract TRUE)
-    elseif(NOT EXISTS "${_version_marker}")
-      set(_needs_extract TRUE)
-    else()
-      file(READ "${_version_marker}" _current_marker)
-      string(STRIP "${_current_marker}" _current_marker)
-      if(NOT _current_marker STREQUAL _expected_marker)
-        set(_needs_extract TRUE)
-      endif()
-    endif()
-  endif()
-
-  if(_needs_extract)
-    file(REMOVE_RECURSE "${output_dir}")
-    file(MAKE_DIRECTORY "${output_dir}")
-  endif()
-  # Restore all archived bytes even when the version marker matches; a modified
-  # extracted cache must not bypass the verified archive on a later configure.
-  file(ARCHIVE_EXTRACT INPUT "${_zip}" DESTINATION "${output_dir}")
-  file(WRITE "${_version_marker}" "${_expected_marker}\n")
-  execute_process(
-    COMMAND powershell.exe -NoProfile -ExecutionPolicy Bypass -File
-      "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../../src_assets/windows/misc/verify-driver-certificate.ps1"
-      -Driver VDD -Directory "${output_dir}"
-    RESULT_VARIABLE _certificate_result)
-  if(NOT _certificate_result EQUAL 0)
-    message(FATAL_ERROR "ZakoVDD ${variant_label} certificate/catalog verification failed")
-  endif()
-endfunction()
-
-function(_fetch_vdd)
-  _fetch_vdd_release("latest" "${VDD_DRIVER_VERSION}" "${VDD_DRIVER_ASSET_NAME}" "${VDD_DRIVER_DIR}" "zakovdd" "${VDD_DRIVER_SHA256}")
-  _fetch_vdd_release("win10" "${VDD_WIN10_DRIVER_VERSION}" "${VDD_WIN10_DRIVER_ASSET_NAME}" "${VDD_WIN10_DRIVER_DIR}" "zakovdd-win10" "${VDD_WIN10_DRIVER_SHA256}")
-endfunction()
-
 # ---------------------------------------------------------------------------
 # nefcon  (zip with architecture subdirectories)
 # ---------------------------------------------------------------------------
@@ -455,8 +213,6 @@ endfunction()
 # ---------------------------------------------------------------------------
 # Execute all fetches
 # ---------------------------------------------------------------------------
-_fetch_vmouse()
-_fetch_vdd()
 _fetch_nefcon()
 _fetch_vigembus()
 
@@ -488,23 +244,6 @@ function(_check_driver name available_var)
   endif()
 endfunction()
 
-_check_driver("vmouse" VMOUSE_DRIVER_AVAILABLE
-    "${VMOUSE_DRIVER_DIR}/ZakoVirtualMouse.dll"
-    "${VMOUSE_DRIVER_DIR}/ZakoVirtualMouse.inf"
-    "${VMOUSE_DRIVER_DIR}/ZakoVirtualMouse.cat"
-    "${VMOUSE_DRIVER_DIR}/ZakoVirtualMouse.cer")
-_check_driver("vdd (latest)" VDD_DRIVER_AVAILABLE
-    "${DRIVER_DEPS_CACHE}/zakovdd-${VDD_DRIVER_VERSION}.zip"
-    "${VDD_DRIVER_DIR}/ZakoVDD.dll"
-    "${VDD_DRIVER_DIR}/ZakoVDD.inf"
-    "${VDD_DRIVER_DIR}/ZakoVDD.cat"
-    "${VDD_DRIVER_DIR}/ZakoVDD.cer")
-_check_driver("vdd (win10)" VDD_WIN10_DRIVER_AVAILABLE
-    "${DRIVER_DEPS_CACHE}/zakovdd-win10-${VDD_WIN10_DRIVER_VERSION}.zip"
-    "${VDD_WIN10_DRIVER_DIR}/ZakoVDD.dll"
-    "${VDD_WIN10_DRIVER_DIR}/ZakoVDD.inf"
-    "${VDD_WIN10_DRIVER_DIR}/ZakoVDD.cat"
-    "${VDD_WIN10_DRIVER_DIR}/ZakoVDD.cer")
 _check_driver("nefcon" NEFCON_DRIVER_AVAILABLE
     "${NEFCON_DRIVER_DIR}/nefconw.exe")
 _check_driver("ViGEmBus" VIGEMBUS_AVAILABLE

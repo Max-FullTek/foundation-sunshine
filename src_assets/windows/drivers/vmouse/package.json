@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "component": "vmouse",
+  "version": "4.32.8.6",
+  "minimum_windows_build": 22000,
+  "architecture": "amd64",
+  "source_repository": "https://github.com/Max-FullTek/foundation-virtual-mouse",
+  "source_commit": "ceeff46c393854c5855e380c77684a1bb163b63f",
+  "build_run": "https://github.com/Max-FullTek/foundation-virtual-mouse/actions/runs/39199637205",
+  "signing": "locally-signed; not Microsoft WHQL/attestation signed",
+  "signer_thumbprint": "78983DA4728FBB6B57779A60F6B1A2F071C84F07",
+  "files": {
+    "FoundationVirtualMouse.cer": "cc4b72ff897d8ef7a4f53c24e928a7316fd43a380353b3d255157600bd5b6564",
+    "foundationvirtualmouseaccess.cat": "bf409635a0f6024c097f7d1aabd4dda9ea485f582ae14c6d4fadbdf8ca602b9e",
+    "FoundationVirtualMouseAccess.inf": "26699013195d5085359d7c2b63187cc16222ce5c0da7253d5642ab44a57f2aa4",
+    "foundationvirtualmouseprototype.cat": "1853618ed5ed1d8605074cbae0f1ca22f87b84d410cc3fc7066103f2df2d1d1d",
+    "FoundationVirtualMousePrototype.dll": "76f1073920a2e9d220acaacd15dd6163edab95db9046a14ffe3e4fe8b32d1323",
+    "FoundationVirtualMousePrototype.inf": "6af564aa73fcadbb290704695cdc1aff69be99f593e8f0857d5eaae39128a56d",
+    "LICENSE": "07639618c7b94ab9953cc61715f6325877e1854dca611ed9b1bd54497cf5e93a"
+  },
+  "source_version": "0.4.0.0",
+  "access_version": "0.1.0.0"
+}

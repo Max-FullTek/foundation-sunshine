@@ -1,0 +1,33 @@
+; Copyright (c) 2026 Foundation contributors. SPDX-License-Identifier: MS-PL.
+; Experimental per-device access policy, not a standalone input driver.
+; Targets only the Foundation HID collection, preserving the inbox mouse driver.
+; Mandatory companion to the base package. Install through install-paired.ps1.
+; Runtime deployment/lifecycle acceptance is recorded separately from INF validity.
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=Extension
+ClassGuid={e2f84ce7-8efa-411c-aa69-97454ca4cb57}
+ExtensionId={3204bc26-c268-46aa-a531-9ec85c75bed1}
+Provider=%Provider%
+DriverVer=10/19/2026,0.1.0.0
+CatalogFile=FoundationVirtualMouseAccess.cat
+PnpLockdown=1
+
+[Manufacturer]
+%Provider%=Foundation,NTamd64.10.0...22000
+
+[Foundation.NTamd64.10.0...22000]
+%DeviceDesc%=FoundationAccess,HID\FoundationVirtualMousePrototype
+
+[FoundationAccess.NT]
+
+[FoundationAccess.NT.HW]
+AddReg=FoundationAccess.Security
+
+[FoundationAccess.Security]
+HKR,,Security,,"D:P(A;;GA;;;SY)(A;;GA;;;BA)"
+
+[Strings]
+Provider="Foundation"
+DeviceDesc="Foundation Virtual Mouse access policy (experimental)"

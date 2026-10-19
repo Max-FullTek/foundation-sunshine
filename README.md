@@ -52,7 +52,7 @@ Foundation Sunshine 是基于 [Sunshine](https://github.com/LizardByte/Sunshine)
 - **需要便携部署（不推荐）：** 选择 `Portable-x64.zip`；文件名前面可能带有版本号，请确认你确实需要如多开等特殊需求时使用。
 - **想体验新功能：** 查看 [预发布版本](https://github.com/AlkaidLab/foundation-sunshine/releases)，先阅读对应版本的已知问题。
 
-开始前准备好 Windows 10 22H2 或更新版本，以及支持硬件视频编码的 AMD、Intel 或 NVIDIA 显卡。可用的画质、分辨率与帧率取决于显卡、驱动、网络和客户端。
+开始前准备好 Windows 11，以及支持硬件视频编码的 AMD、Intel 或 NVIDIA 显卡。可用的画质、分辨率与帧率取决于显卡、驱动、网络和客户端。
 
 ### 控制端（Moonlight）
 

@@ -1,0 +1,41 @@
+name: Package independent Foundation drivers
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'src_assets/windows/drivers/**'
+      - 'src_assets/windows/misc/vmouse/**'
+      - 'src_assets/windows/misc/vdd/**'
+      - 'src_assets/windows/misc/verify-driver-certificate.ps1'
+      - 'src_assets/windows/misc/manage-driver.ps1'
+      - 'scripts/package-drivers.ps1'
+      - 'cmake/packaging/FetchDriverDeps.cmake'
+      - '.github/workflows/package-drivers.yml'
+  workflow_dispatch:
+    inputs:
+      component:
+        description: 'Driver package to build (does not build Lite)'
+        type: choice
+        default: all
+        options: [all, vdd, vmouse]
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Package signed driver payloads
+        shell: pwsh
+        env:
+          COMPONENT: ${{ inputs.component || 'all' }}
+        run: ./scripts/package-drivers.ps1 -Component $env:COMPONENT -OutputDirectory "$env:RUNNER_TEMP/foundation-drivers"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: foundation-independent-drivers
+          path: ${{ runner.temp }}/foundation-drivers/Foundation-*.zip
+          if-no-files-found: error
+          retention-days: 30

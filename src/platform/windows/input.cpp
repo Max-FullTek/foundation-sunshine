@@ -1681,7 +1681,7 @@ namespace platf {
     if (!raw->global->fnCreateSyntheticPointerDevice ||
         !raw->global->fnInjectSyntheticPointerInput ||
         !raw->global->fnDestroySyntheticPointerDevice) {
-      BOOST_LOG(warning) << "Touch input requires Windows 10 1809 or later"sv;
+      BOOST_LOG(warning) << "Windows synthetic touch input API is unavailable"sv;
       return;
     }
 
@@ -1812,7 +1812,7 @@ namespace platf {
     if (!raw->global->fnCreateSyntheticPointerDevice ||
         !raw->global->fnInjectSyntheticPointerInput ||
         !raw->global->fnDestroySyntheticPointerDevice) {
-      BOOST_LOG(warning) << "Pen input requires Windows 10 1809 or later"sv;
+      BOOST_LOG(warning) << "Windows synthetic pen input API is unavailable"sv;
       return;
     }
 
@@ -2608,14 +2608,14 @@ namespace platf {
       caps |= platform_caps::controller_touch;
     }
 
-    // We support pen and touch input on Win10 1809+
+    // Advertise native pen/touch only when its required API is available.
     if (GetProcAddress(GetModuleHandleA("user32.dll"), "CreateSyntheticPointerDevice") != nullptr) {
       if (config::input.native_pen_touch) {
         caps |= platform_caps::pen_touch;
       }
     }
     else {
-      BOOST_LOG(warning) << "Touch input requires Windows 10 1809 or later"sv;
+      BOOST_LOG(warning) << "Windows synthetic touch input API is unavailable"sv;
     }
 
     if (get_create_synthetic_pointer_device2_proc() != nullptr) {

@@ -47,7 +47,7 @@ Foundation Sunshine が役に立ったら、プロジェクトに [⭐ Star](htt
 
 [最新の正式リリース](https://github.com/AlkaidLab/foundation-sunshine/releases/latest)で **Assets** を開き、`WindowsInstaller.exe` で終わるファイルをダウンロードします。初回はインストーラーを使用し、`Portable-x64.zip` は複数起動などの特別な用途のみ（非推奨）。新機能は[プレリリース](https://github.com/AlkaidLab/foundation-sunshine/releases)で確認できます。
 
-Windows 10 22H2 以降と、ハードウェア ビデオ エンコード対応の AMD / Intel / NVIDIA GPU が必要です。画質、解像度、フレームレートは GPU、ドライバー、ネットワーク、クライアントに依存します。
+Windows 11と、ハードウェア ビデオ エンコード対応の AMD / Intel / NVIDIA GPU が必要です。画質、解像度、フレームレートは GPU、ドライバー、ネットワーク、クライアントに依存します。
 
 ### クライアント（Moonlight）
 
